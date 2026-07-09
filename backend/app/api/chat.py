@@ -36,6 +36,7 @@ async def query_rag(
         headers={
             "Cache-Control": "no-cache",
             "Connection": "keep-alive",
+            "Content-Encoding": "identity",
             "X-Accel-Buffering": "no" # Prevents Nginx from buffering the stream
         }
     )
