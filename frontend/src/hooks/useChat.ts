@@ -94,9 +94,13 @@ export const useChat = () => {
 
     const token = localStorage.getItem('token');
     
+    const backendUrl = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+      ? ''
+      : 'https://rag-backend-8pv0.onrender.com';
+
     try {
-      // Use vanilla fetch for custom POST streaming headers
-      const response = await fetch('/api/query', {
+      // Use vanilla fetch for custom POST streaming headers - call backend directly to bypass static site buffering proxies
+      const response = await fetch(`${backendUrl}/api/query`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
