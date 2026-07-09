@@ -1,0 +1,12 @@
+.env
+.env.local
+.pytest_cache/
+__pycache__/
+*.pyc
+node_modules/
+dist/
+uploads/
+vector_store/
+.gemini/
+.idea/
+.vscode/
