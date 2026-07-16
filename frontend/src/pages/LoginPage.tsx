@@ -40,7 +40,7 @@ export const LoginPage: React.FC = () => {
         {/* Brand Header */}
         <div className="text-center">
           <Link to="/" className="inline-flex items-center gap-2 font-display text-3xl font-black text-gray-900 dark:text-white">
-            <span>Vellum <span className="font-normal text-zinc-500 dark:text-zinc-400">Chat</span></span>
+            <span>Vellum <span className="font-normal text-zinc-500 dark:text-zinc-400">RAG</span></span>
           </Link>
           <h2 className="mt-3 text-2xl font-bold tracking-tight">Access your Console</h2>
           <p className="mt-1.5 text-sm text-gray-500 dark:text-dark-muted">

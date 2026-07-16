@@ -15,7 +15,7 @@ export const MainLayout: React.FC = () => {
       <header className="sticky top-0 z-50 glass border-b border-gray-200/50 dark:border-white/5 backdrop-blur-md">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
           <Link to="/" className="flex items-center gap-2 font-display text-2xl font-black tracking-tight text-gray-900 dark:text-white">
-            <span>Vellum <span className="font-normal text-zinc-500 dark:text-zinc-400">Chat</span></span>
+            <span>Vellum <span className="font-normal text-zinc-500 dark:text-zinc-400">RAG</span></span>
           </Link>
 
           {/* Navigation Links */}
@@ -54,10 +54,10 @@ export const MainLayout: React.FC = () => {
       <footer className="border-t border-gray-200/50 dark:border-white/5 bg-gray-100 dark:bg-dark-card/30">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 flex flex-col md:flex-row items-center justify-between gap-6">
           <div className="flex items-center gap-2">
-            <span className="font-display font-black text-lg text-gray-900 dark:text-white">Vellum Chat</span>
+            <span className="font-display font-black text-lg text-gray-900 dark:text-white">Vellum RAG</span>
           </div>
           <p className="text-sm text-gray-500 dark:text-dark-muted font-medium">
-            &copy; {new Date().getFullYear()} Vellum Chat. Minimalist Semantic Search Platform.
+            &copy; {new Date().getFullYear()} Vellum RAG. Minimalist Semantic Search Platform.
           </p>
           <div className="flex gap-6 text-sm text-gray-500 dark:text-dark-muted">
             <a href="#" className="hover:text-brand-500">Privacy Policy</a>
