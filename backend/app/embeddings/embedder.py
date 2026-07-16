@@ -16,7 +16,13 @@ class Embedder:
         if cls._instance is None:
             cls._instance = super(Embedder, cls).__new__(cls)
             logger.info("Initializing local SentenceTransformer model (all-MiniLM-L6-v2)...")
-            cls._instance.model = SentenceTransformer('sentence-transformers/all-MiniLM-L6-v2')
+            # Enforce offline loading to prevent startup network timeouts
+            os.environ["HF_HUB_OFFLINE"] = "1"
+            try:
+                cls._instance.model = SentenceTransformer('sentence-transformers/all-MiniLM-L6-v2', local_files_only=True)
+            except Exception as e:
+                logger.warning(f"Offline load failed ({e}). Retrying without local_files_only restriction...")
+                cls._instance.model = SentenceTransformer('sentence-transformers/all-MiniLM-L6-v2')
             logger.info("Local SentenceTransformer model loaded successfully.")
         return cls._instance
 
