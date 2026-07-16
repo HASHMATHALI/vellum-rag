@@ -30,7 +30,6 @@ export const DashboardLayout: React.FC = () => {
   const navItems = [
     { name: 'AI Chatbot', path: '/chat', icon: MessageSquare },
     { name: 'My Documents', path: '/dashboard', icon: FileText },
-    { name: 'Account Profile', path: '/profile', icon: UserIcon },
     { name: 'Preferences', path: '/settings', icon: SettingsIcon },
   ];
 
@@ -56,9 +55,8 @@ export const DashboardLayout: React.FC = () => {
         }`}
       >
         <div className="h-16 flex items-center justify-between px-6 border-b border-gray-200/50 dark:border-white/5">
-          <NavLink to="/" className="flex items-center gap-2 font-display text-xl font-bold tracking-tight text-brand-600 dark:text-brand-400">
-            <Cpu className="w-6 h-6 text-brand-500" />
-            <span>Aura<span className="text-gray-900 dark:text-white font-normal">Console</span></span>
+          <NavLink to="/" className="flex items-center gap-2 font-display text-xl font-black tracking-tight text-gray-900 dark:text-white">
+            <span>Vellum <span className="font-normal text-zinc-500 dark:text-zinc-400">Console</span></span>
           </NavLink>
           <button 
             onClick={() => setSidebarOpen(false)}
@@ -77,10 +75,10 @@ export const DashboardLayout: React.FC = () => {
                 key={item.path}
                 to={item.path}
                 className={({ isActive }) =>
-                  `flex items-center gap-3 px-4 py-3 rounded-xl font-medium transition-all duration-150 ${
+                  `flex items-center gap-3 px-4 py-3 rounded-xl font-semibold transition-all duration-150 ${
                     isActive 
-                      ? 'bg-brand-500 text-white shadow-md shadow-brand-500/20' 
-                      : 'hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+                      ? 'bg-zinc-950 text-white dark:bg-white dark:text-zinc-950 shadow-sm' 
+                      : 'hover:bg-zinc-100 dark:hover:bg-zinc-800/60 text-zinc-600 dark:text-zinc-400 hover:text-zinc-950 dark:hover:text-white'
                   }`
                 }
               >
@@ -91,24 +89,14 @@ export const DashboardLayout: React.FC = () => {
           })}
         </nav>
 
-        {/* User Block & Logout */}
-        <div className="p-4 border-t border-gray-200/50 dark:border-white/5">
-          <div className="flex items-center gap-3 px-2 py-3 mb-2">
-            <div className="w-10 h-10 rounded-full bg-brand-100 dark:bg-brand-900/30 flex items-center justify-center font-display font-bold text-brand-600 dark:text-brand-400">
-              {user?.full_name?.charAt(0).toUpperCase() || 'U'}
-            </div>
-            <div className="overflow-hidden">
-              <h4 className="font-semibold text-sm truncate">{user?.full_name}</h4>
-              <p className="text-xs text-gray-500 dark:text-dark-muted truncate capitalize">{user?.role}</p>
-            </div>
-          </div>
-          <button
-            onClick={handleLogout}
-            className="w-full flex items-center gap-3 px-4 py-3 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/20 rounded-xl font-medium transition-colors"
-          >
-            <LogOut className="w-5 h-5" />
-            <span>Sign Out</span>
-          </button>
+        {/* Sidebar User Identity */}
+        <div className="p-4 border-t border-gray-200/50 dark:border-white/5 flex flex-col items-center gap-1.5 shrink-0 bg-zinc-50/50 dark:bg-zinc-900/10">
+          <span className="text-xs font-bold text-zinc-900 dark:text-zinc-100 truncate max-w-[200px]" title={user?.email}>
+            {user?.full_name || 'Vellum Admin'}
+          </span>
+          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-200 border border-zinc-200/60 dark:border-zinc-700/60">
+            {user?.role || 'Admin'}
+          </span>
         </div>
       </aside>
 

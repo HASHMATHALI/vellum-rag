@@ -5,7 +5,6 @@ from app.database.connection import get_db
 from app.api.schemas import SystemStatsResponse, HealthResponse
 from app.services.admin_service import AdminService
 from app.auth.dependencies import get_current_admin
-from app.vectorstore.faiss_store import vector_store
 from app.models.user import User
 
 router = APIRouter(tags=["Admin & Monitoring"])
@@ -31,11 +30,15 @@ async def get_health(db: AsyncSession = Depends(get_db)):
     except Exception:
         db_status = "down"
 
-    # Vector store state
+    # Vector store state (database pgvector count)
     vector_store_status = "healthy"
     vector_store_size = 0
     try:
-        vector_store_size = vector_store.index.ntotal
+        from app.models.document import DocumentChunk
+        from sqlalchemy import func
+        stmt = select(func.count(DocumentChunk.id)).where(DocumentChunk.embedding.isnot(None))
+        res = await db.execute(stmt)
+        vector_store_size = res.scalar() or 0
     except Exception:
         vector_store_status = "down"
 

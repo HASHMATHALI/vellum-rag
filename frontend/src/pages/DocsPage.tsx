@@ -113,7 +113,7 @@ data: [DONE]`
           <section id="quickstart" className="space-y-4">
             <h1 className="font-display text-3xl font-extrabold tracking-tight">Developer Integration Guide</h1>
             <p className="text-gray-600 dark:text-dark-muted leading-relaxed text-sm">
-              The AuraRAG platform exposes simple REST APIs, allowing external applications, mobile apps, or backend worker jobs to upload documents and query vector indexes. All requests require standard Authorization bearer headers.
+              The Vellum Chat platform exposes simple REST APIs, allowing external applications, mobile apps, or backend worker jobs to upload documents and query vector indexes. All requests require standard Authorization bearer headers.
             </p>
           </section>
 

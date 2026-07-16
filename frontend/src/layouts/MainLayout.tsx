@@ -14,15 +14,13 @@ export const MainLayout: React.FC = () => {
       {/* Sticky Header */}
       <header className="sticky top-0 z-50 glass border-b border-gray-200/50 dark:border-white/5 backdrop-blur-md">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-          <Link to="/" className="flex items-center gap-2 font-display text-2xl font-bold tracking-tight text-brand-600 dark:text-brand-400">
-            <Cpu className="w-8 h-8 animate-pulse text-brand-500" />
-            <span>Aura<span className="text-gray-900 dark:text-white font-normal">RAG</span></span>
+          <Link to="/" className="flex items-center gap-2 font-display text-2xl font-black tracking-tight text-gray-900 dark:text-white">
+            <span>Vellum <span className="font-normal text-zinc-500 dark:text-zinc-400">Chat</span></span>
           </Link>
 
           {/* Navigation Links */}
           <nav className="hidden md:flex items-center gap-8 font-medium">
             <Link to="/features" className="hover:text-brand-500 transition-colors">Features</Link>
-            <Link to="/pricing" className="hover:text-brand-500 transition-colors">Pricing</Link>
             <Link to="/docs" className="hover:text-brand-500 transition-colors">Documentation</Link>
           </nav>
 
@@ -36,23 +34,13 @@ export const MainLayout: React.FC = () => {
               {theme === 'dark' ? <Sun className="w-5 h-5 text-yellow-400" /> : <Moon className="w-5 h-5" />}
             </button>
 
-            {user ? (
-              <button
-                onClick={() => navigate('/dashboard')}
-                className="flex items-center gap-2 px-4 py-2 rounded-lg bg-brand-500 text-white font-medium hover:bg-brand-600 active:scale-95 transition-all shadow-md shadow-brand-500/20"
-              >
-                <LayoutDashboard className="w-4 h-4" />
-                <span>Console</span>
-              </button>
-            ) : (
-              <button
-                onClick={() => navigate('/login')}
-                className="flex items-center gap-2 px-4 py-2 rounded-lg border border-gray-300 dark:border-dark-border hover:bg-gray-100 dark:hover:bg-gray-800 font-medium transition-all"
-              >
-                <LogIn className="w-4 h-4" />
-                <span>Sign In</span>
-              </button>
-            )}
+            <button
+              onClick={() => navigate('/dashboard')}
+              className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-zinc-950 hover:bg-zinc-800 dark:bg-white dark:hover:bg-zinc-100 text-white dark:text-black font-bold border border-zinc-900 dark:border-white hover:scale-[1.01] active:scale-98 transition-all duration-300 shadow-md text-xs"
+            >
+              <LayoutDashboard className="w-4 h-4" />
+              <span>Console</span>
+            </button>
           </div>
         </div>
       </header>
@@ -66,11 +54,10 @@ export const MainLayout: React.FC = () => {
       <footer className="border-t border-gray-200/50 dark:border-white/5 bg-gray-100 dark:bg-dark-card/30">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 flex flex-col md:flex-row items-center justify-between gap-6">
           <div className="flex items-center gap-2">
-            <Cpu className="w-6 h-6 text-brand-500" />
-            <span className="font-display font-bold text-lg">AuraRAG</span>
+            <span className="font-display font-black text-lg text-gray-900 dark:text-white">Vellum Chat</span>
           </div>
-          <p className="text-sm text-gray-500 dark:text-dark-muted">
-            &copy; {new Date().getFullYear()} AuraRAG Inc. Production-ready Semantic Search Platform.
+          <p className="text-sm text-gray-500 dark:text-dark-muted font-medium">
+            &copy; {new Date().getFullYear()} Vellum Chat. Minimalist Semantic Search Platform.
           </p>
           <div className="flex gap-6 text-sm text-gray-500 dark:text-dark-muted">
             <a href="#" className="hover:text-brand-500">Privacy Policy</a>

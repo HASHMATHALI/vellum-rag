@@ -29,6 +29,10 @@ class DocumentChunk(Base):
     chunk_index: Mapped[int] = mapped_column(Integer, nullable=False)
     text_content: Mapped[str] = mapped_column(Text, nullable=False)
     page_number: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
+    
+    # pgvector embedding representation
+    from pgvector.sqlalchemy import Vector
+    embedding: Mapped[list] = mapped_column(Vector(384), nullable=True) # type: ignore
 
     # Relationships
     document = relationship("Document", back_populates="chunks")

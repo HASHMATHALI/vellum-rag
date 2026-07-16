@@ -7,7 +7,6 @@ import {
   Layers, 
   GitBranch, 
   FileText, 
-  Cpu, 
   HelpCircle 
 } from 'lucide-react';
 
@@ -21,7 +20,7 @@ export const FeaturesPage: React.FC = () => {
           Advanced Retrieval & <span className="gradient-text">Search Architecture</span>
         </h1>
         <p className="text-gray-600 dark:text-dark-muted leading-relaxed">
-          Discover the high-performance retrieval and processing layers that power AuraRAG, allowing sub-100ms answers over large collections.
+          Discover the high-performance retrieval and processing layers that power Vellum, allowing sub-100ms answers over large collections.
         </p>
       </div>
 
@@ -76,7 +75,7 @@ export const FeaturesPage: React.FC = () => {
         <Card className="p-8 border-gray-200/50 dark:border-white/5 bg-white dark:bg-dark-card/50 shadow-xl space-y-6">
           <div className="flex items-center justify-between border-b border-gray-200/50 dark:border-white/5 pb-4">
             <span className="text-xs font-bold uppercase tracking-wider text-brand-500">Pipeline Visualization</span>
-            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-brand-100 text-brand-800 dark:bg-brand-950/40 dark:text-brand-400">FAISS Indexer</span>
+            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-brand-100 text-brand-800 dark:bg-brand-950/40 dark:text-brand-400">pgvector Indexer</span>
           </div>
 
           <div className="space-y-4">
@@ -93,8 +92,8 @@ export const FeaturesPage: React.FC = () => {
               all-MiniLM-L6-v2 maps each chunk to a 384-dimensional dense float vector.
             </div>
             <div className="p-3 bg-gray-50 dark:bg-dark-bg rounded-xl border border-gray-200/30 dark:border-white/5 text-xs">
-              <span className="font-bold block mb-1">Step 4: Vector Storage (FAISS)</span>
-              Vectors load into FAISS IndexIDMap linked directly to SQL IDs.
+              <span className="font-bold block mb-1">Step 4: Vector Storage (pgvector)</span>
+              Vectors are written directly to PostgreSQL pgvector columns.
             </div>
           </div>
         </Card>
@@ -103,7 +102,7 @@ export const FeaturesPage: React.FC = () => {
       {/* Dynamic CTA */}
       <div className="text-center py-8">
         <Button size="lg" onClick={() => navigate('/dashboard')}>
-          Launch AuraConsole Now
+          Launch Vellum Console
         </Button>
       </div>
     </div>

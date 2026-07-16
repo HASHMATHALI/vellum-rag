@@ -55,8 +55,44 @@ async def on_startup():
     
     try:
         async with engine.begin() as conn:
+            from sqlalchemy import text
+            await conn.execute(text("CREATE EXTENSION IF NOT EXISTS vector;"))
             await conn.run_sync(Base.metadata.create_all)
         logger.info("Database schemas verified/created successfully.")
+        
+        # Seed default users
+        from app.database.connection import async_session
+        from app.auth.jwt import get_password_hash
+        from sqlalchemy.future import select
+        async with async_session() as db:
+            # Check guest
+            result = await db.execute(select(User).where(User.email == "guest@vellum.ai"))
+            guest = result.scalars().first()
+            if guest is None:
+                guest = User(
+                    email="guest@vellum.ai",
+                    hashed_password=get_password_hash("guest123"),
+                    full_name="Guest User",
+                    role="user",
+                    is_active=True
+                )
+                db.add(guest)
+                
+            # Check admin
+            result = await db.execute(select(User).where(User.email == settings.ADMIN_EMAIL))
+            admin_user = result.scalars().first()
+            if admin_user is None:
+                admin_user = User(
+                    email=settings.ADMIN_EMAIL,
+                    hashed_password=get_password_hash(settings.ADMIN_PASSWORD),
+                    full_name="Vellum Admin",
+                    role="admin",
+                    is_active=True
+                )
+                db.add(admin_user)
+                
+            await db.commit()
+        logger.info("Default seed users verified/created successfully.")
     except Exception as e:
         logger.critical(f"Failed to initialize database tables: {e}", exc_info=True)
 

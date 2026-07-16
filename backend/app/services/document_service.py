@@ -1,7 +1,7 @@
 import os
-import shutil
 import logging
 from typing import List
+from urllib.parse import unquote
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from fastapi import UploadFile, HTTPException, status
@@ -11,9 +11,17 @@ from app.models.user import User
 from app.ingestion.parser import FileParser
 from app.ingestion.chunker import TextChunker
 from app.embeddings.embedder import embedder
-from app.vectorstore.faiss_store import vector_store
+from supabase import create_client
 
 logger = logging.getLogger(__name__)
+
+def get_supabase_client():
+    if settings.SUPABASE_URL and settings.SUPABASE_KEY:
+        try:
+            return create_client(settings.SUPABASE_URL, settings.SUPABASE_KEY)
+        except Exception as e:
+            logger.error(f"Failed to initialize Supabase client: {e}")
+    return None
 
 class DocumentService:
     """Service to manage file upload, parsing, embedding generation, indexing, and deletions."""
@@ -42,7 +50,7 @@ class DocumentService:
         user: User, 
         background_tasks
     ) -> Document:
-        """Saves file to disk, logs DB entry and schedules async parsing and indexing."""
+        """Saves file to Supabase Storage (or disk locally), logs DB entry and schedules RAG indexing."""
         # Check file extension
         ext = os.path.splitext(file.filename)[1].lower().strip(".")
         if ext not in ["pdf", "docx", "txt", "md"]:
@@ -51,24 +59,51 @@ class DocumentService:
                 detail=f"Unsupported file format: .{ext}"
             )
             
-        # Ensure upload folder exists
-        os.makedirs(settings.UPLOAD_DIR, exist_ok=True)
+        file_size = 0
+        filepath = ""
+        supabase_client = get_supabase_client()
         
-        # Save file to disk
-        filepath = os.path.join(settings.UPLOAD_DIR, f"{user.id}_{int(os.urandom(4).hex(), 16)}_{file.filename}")
-        try:
-            with open(filepath, "wb") as f:
-                shutil.copyfileobj(file.file, f)
-        except Exception as e:
-            logger.error(f"Failed to write file to disk ({e})")
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="Could not save file to disk."
-            )
+        if supabase_client:
+            # Upload directly to Supabase Storage
+            filename_clean = f"{user.id}_{int(os.urandom(4).hex(), 16)}_{file.filename}"
+            supabase_path = f"{user.id}/{filename_clean}"
+            try:
+                file_content = await file.read()
+                file_size = len(file_content)
+                
+                # Upload to Supabase Bucket
+                supabase_client.storage.from_(settings.SUPABASE_STORAGE_BUCKET).upload(
+                    path=supabase_path,
+                    file=file_content,
+                    file_options={"content-type": file.content_type or "application/octet-stream"}
+                )
+                
+                # Get the Public URL of the uploaded asset
+                filepath = supabase_client.storage.from_(settings.SUPABASE_STORAGE_BUCKET).get_public_url(supabase_path)
+            except Exception as e:
+                logger.error(f"Failed to upload file to Supabase Storage: {e}")
+                raise HTTPException(
+                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                    detail=f"Could not upload file to cloud storage: {e}"
+                )
+        else:
+            # Fall back to local file storage
+            os.makedirs(settings.UPLOAD_DIR, exist_ok=True)
+            filepath = os.path.join(settings.UPLOAD_DIR, f"{user.id}_{int(os.urandom(4).hex(), 16)}_{file.filename}")
+            try:
+                await file.seek(0)
+                file_content = await file.read()
+                file_size = len(file_content)
+                with open(filepath, "wb") as f:
+                    f.write(file_content)
+            except Exception as e:
+                logger.error(f"Failed to write file to local disk: {e}")
+                raise HTTPException(
+                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                    detail="Could not save file to local disk."
+                )
             
-        file_size = os.path.getsize(filepath)
-        
-        # Log to Database
+        # Log metadata to PostgreSQL
         db_doc = Document(
             filename=file.filename,
             filepath=filepath,
@@ -88,8 +123,7 @@ class DocumentService:
 
     @classmethod
     async def _process_and_index_document(cls, document_id: int):
-        """Background worker to extract text, chunk, embed, and load into FAISS."""
-        # Since this runs as background task in thread pool, create a separate DB session
+        """Background worker to extract text, chunk, embed, and load into pgvector."""
         from app.database.connection import async_session
         
         async with async_session() as db:
@@ -101,7 +135,7 @@ class DocumentService:
                     logger.error(f"Background Process: Document {document_id} not found.")
                     return
                 
-                # 1. Parse File
+                # 1. Parse File (remotely from Supabase URL or locally from filepath)
                 parsed_pages = FileParser.parse(doc.filepath, doc.file_type)
                 if not parsed_pages:
                     raise ValueError("No text could be extracted from this document.")
@@ -112,7 +146,7 @@ class DocumentService:
                 if not chunks:
                     raise ValueError("No chunks generated from the document text.")
                 
-                # 3. Save chunks to DB first to acquire primary key IDs
+                # 3. Save chunks to DB
                 db_chunks = []
                 for ch in chunks:
                     db_chunk = DocumentChunk(
@@ -122,15 +156,17 @@ class DocumentService:
                         page_number=ch["page_number"]
                     )
                     db.add(db_chunk)
-                await db.flush() # Flush to populate db_chunk.id without committing transaction yet
+                    db_chunks.append(db_chunk)
+                await db.flush()
                 
-                # 4. Generate Embeddings and Add to FAISS using chunk.id
+                # 4. Generate Embeddings and Save Directly to Database Chunks
                 texts = [ch.text_content for ch in db_chunks]
                 embeddings = embedder.get_embeddings(texts)
-                chunk_ids = [ch.id for ch in db_chunks]
                 
-                # Save into FAISS
-                vector_store.add_vectors(embeddings, chunk_ids)
+                for ch, emb in zip(db_chunks, embeddings):
+                    emb_list = emb.tolist() if hasattr(emb, "tolist") else list(emb)
+                    ch.embedding = emb_list
+                    db.add(ch)
                 
                 # Update Document status
                 doc.status = "indexed"
@@ -147,6 +183,7 @@ class DocumentService:
                     doc = result.scalars().first()
                     if doc:
                         doc.status = "failed"
+                        doc.total_chunks = 0
                         db.add(doc)
                         await db.commit()
                 except Exception as rollback_err:
@@ -154,7 +191,7 @@ class DocumentService:
 
     @staticmethod
     async def delete_document(db: AsyncSession, document_id: int, user: User) -> bool:
-        """Removes a document from Postgres and deletes its vectors from FAISS."""
+        """Removes a document from Postgres and deletes its file from storage bucket."""
         # Fetch document
         result = await db.execute(select(Document).where(Document.id == document_id))
         doc = result.scalars().first()
@@ -168,57 +205,93 @@ class DocumentService:
                 detail="Not authorized to delete this document."
             )
             
-        # Get all chunk IDs
-        chunks_res = await db.execute(
-            select(DocumentChunk.id).where(DocumentChunk.document_id == doc.id)
-        )
-        chunk_ids = list(chunks_res.scalars().all())
-        
-        # 1. Delete from FAISS
-        if chunk_ids:
-            try:
-                vector_store.delete_vectors(chunk_ids)
-            except Exception as e:
-                logger.error(f"Failed to remove vectors for document {document_id}: {e}")
+        # 1. Delete file from Storage (Supabase or Local)
+        if doc.filepath.startswith("http://") or doc.filepath.startswith("https://"):
+            supabase_client = get_supabase_client()
+            if supabase_client:
+                try:
+                    bucket_name = settings.SUPABASE_STORAGE_BUCKET
+                    part_to_find = f"/public/{bucket_name}/"
+                    if part_to_find in doc.filepath:
+                        storage_path = doc.filepath.split(part_to_find)[1]
+                        storage_path = unquote(storage_path)
+                        supabase_client.storage.from_(bucket_name).remove([storage_path])
+                        logger.info(f"Deleted remote file {storage_path} from Supabase Storage.")
+                except Exception as e:
+                    logger.error(f"Failed to delete file from Supabase Storage: {e}")
+        else:
+            if os.path.exists(doc.filepath):
+                try:
+                    os.remove(doc.filepath)
+                except Exception as e:
+                    logger.error(f"Failed to delete local document file {doc.filepath}: {e}")
                 
-        # 2. Delete physical file
-        if os.path.exists(doc.filepath):
-            try:
-                os.remove(doc.filepath)
-            except Exception as e:
-                logger.error(f"Failed to delete document file {doc.filepath}: {e}")
-                
-        # 3. Delete from DB (chunks cascade delete automatically)
+        # 2. Delete from DB (chunks and vector embeddings cascade delete automatically)
         await db.delete(doc)
         await db.commit()
         return True
 
     @classmethod
     async def rebuild_index(cls, db: AsyncSession) -> bool:
-        """Admin function to erase FAISS and index all existing chunks from the database."""
-        # Fetch all successful chunks in database
+        """Admin function to fully re-parse, re-chunk, and re-embed all documents in PostgreSQL from scratch."""
         result = await db.execute(
-            select(DocumentChunk)
-            .join(Document)
+            select(Document)
             .where(Document.status == "indexed")
         )
-        chunks = result.scalars().all()
+        documents = result.scalars().all()
         
-        # Clear current FAISS index
-        vector_store.clear()
-        
-        if not chunks:
+        if not documents:
             return True
             
-        # Process in batches to avoid RAM overflow
-        batch_size = 256
-        for i in range(0, len(chunks), batch_size):
-            batch = chunks[i : i + batch_size]
-            texts = [c.text_content for c in batch]
-            ids = [c.id for c in batch]
-            
-            embeddings = embedder.get_embeddings(texts)
-            vector_store.add_vectors(embeddings, ids)
-            
-        vector_store.save_index()
+        from sqlalchemy import delete
+        
+        for doc in documents:
+            try:
+                # 1. Delete existing chunks for this document
+                await db.execute(delete(DocumentChunk).where(DocumentChunk.document_id == doc.id))
+                
+                # 2. Re-parse File
+                parsed_pages = FileParser.parse(doc.filepath, doc.file_type)
+                if not parsed_pages:
+                    logger.error(f"Rebuild Index: No text extracted from {doc.filename}")
+                    continue
+                    
+                # 3. Re-chunk text
+                chunker = TextChunker()
+                chunks = chunker.chunk_document(parsed_pages)
+                if not chunks:
+                    logger.error(f"Rebuild Index: No chunks generated from {doc.filename}")
+                    continue
+                    
+                # 4. Save and embed new chunks
+                db_chunks = []
+                for ch in chunks:
+                    db_chunk = DocumentChunk(
+                        document_id=doc.id,
+                        chunk_index=ch["chunk_index"],
+                        text_content=ch["text_content"],
+                        page_number=ch["page_number"]
+                    )
+                    db.add(db_chunk)
+                    db_chunks.append(db_chunk)
+                await db.flush()
+                
+                # Generate embeddings
+                texts = [ch.text_content for ch in db_chunks]
+                embeddings = embedder.get_embeddings(texts)
+                
+                for ch, emb in zip(db_chunks, embeddings):
+                    emb_list = emb.tolist() if hasattr(emb, "tolist") else list(emb)
+                    ch.embedding = emb_list
+                    db.add(ch)
+                
+                # Update total chunks count
+                doc.total_chunks = len(db_chunks)
+                db.add(doc)
+                await db.commit()
+                logger.info(f"Rebuild Index: Successfully re-chunked and re-indexed {doc.filename} (Chunks: {len(db_chunks)})")
+                
+            except Exception as e:
+                logger.error(f"Rebuild Index: Failed to re-index {doc.filename}: {e}", exc_info=True)
+                
         return True

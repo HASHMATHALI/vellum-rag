@@ -3,26 +3,14 @@ from typing import List, Dict, Tuple
 import numpy as np
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
+from sqlalchemy import or_
 from app.embeddings.embedder import embedder
-from app.vectorstore.faiss_store import vector_store
 from app.models.document import DocumentChunk
 
 logger = logging.getLogger(__name__)
 
 class Retriever:
-    """Advanced Retrieval Engine supporting Semantic Search, MMR, and Hybrid Search."""
-
-    @staticmethod
-    async def get_chunks_by_ids(db: AsyncSession, chunk_ids: List[int]) -> Dict[int, DocumentChunk]:
-        """Fetch DocumentChunk models from DB for a list of primary key IDs."""
-        if not chunk_ids:
-            return {}
-        result = await db.execute(
-            select(DocumentChunk)
-            .where(DocumentChunk.id.in_(chunk_ids))
-        )
-        chunks = result.scalars().all()
-        return {chunk.id: chunk for chunk in chunks}
+    """Advanced Retrieval Engine supporting Semantic Search, MMR, and Hybrid Search using database pgvector."""
 
     @classmethod
     async def semantic_search(
@@ -32,30 +20,26 @@ class Retriever:
         k: int = 5, 
         document_ids: List[int] = None
     ) -> List[Tuple[DocumentChunk, float]]:
-        """Standard Semantic search using FAISS Cosine Similarity (IP)."""
-        query_vector = embedder.get_embedding(query)
-        # Search a wider pool if filtering is applied, to account for filtered-out results
-        search_k = k * 3 if document_ids else k
-        
-        raw_results = vector_store.search(query_vector, search_k)
-        if not raw_results:
+        """Standard Semantic search using pgvector Cosine Similarity."""
+        if document_ids is not None and not document_ids:
             return []
             
-        chunk_ids = [idx for idx, _ in raw_results]
-        db_chunks = await cls.get_chunks_by_ids(db, chunk_ids)
+        query_vector = embedder.get_embedding(query)
+        query_list = query_vector.tolist() if hasattr(query_vector, "tolist") else list(query_vector)
+
+        # 1 - Cosine Distance is Cosine Similarity
+        cosine_distance_expr = DocumentChunk.embedding.cosine_distance(query_list)
+        stmt = select(DocumentChunk, (1 - cosine_distance_expr).label("similarity"))
         
-        final_results = []
-        for chunk_id, score in raw_results:
-            chunk = db_chunks.get(chunk_id)
-            if chunk:
-                # If document filter list is provided, verify match
-                if document_ids is not None and chunk.document_id not in document_ids:
-                    continue
-                final_results.append((chunk, score))
-                if len(final_results) == k:
-                    break
-                    
-        return final_results
+        if document_ids is not None:
+            stmt = stmt.where(DocumentChunk.document_id.in_(document_ids))
+            
+        stmt = stmt.order_by(cosine_distance_expr.asc()).limit(k)
+        
+        res = await db.execute(stmt)
+        raw_results = res.all()
+        
+        return [(row[0], float(row[1])) for row in raw_results]
 
     @classmethod
     async def mmr_search(
@@ -66,41 +50,38 @@ class Retriever:
         document_ids: List[int] = None, 
         lambda_val: float = 0.5
     ) -> List[Tuple[DocumentChunk, float]]:
-        """Maximal Marginal Relevance search to balance relevance and chunk diversity."""
+        """Maximal Marginal Relevance search using database pgvector to balance relevance and diversity."""
+        if document_ids is not None and not document_ids:
+            return []
+
         query_vector = embedder.get_embedding(query)
-        # Fetch candidate pool (e.g., 3 * k candidates)
+        query_list = query_vector.tolist() if hasattr(query_vector, "tolist") else list(query_vector)
         candidate_k = k * 3
-        raw_results = vector_store.search(query_vector, candidate_k)
+
+        cosine_distance_expr = DocumentChunk.embedding.cosine_distance(query_list)
+        stmt = select(DocumentChunk, (1 - cosine_distance_expr).label("similarity"))
+        
+        if document_ids is not None:
+            stmt = stmt.where(DocumentChunk.document_id.in_(document_ids))
+            
+        stmt = stmt.order_by(cosine_distance_expr.asc()).limit(candidate_k)
+        
+        res = await db.execute(stmt)
+        raw_results = res.all()
         
         if not raw_results:
             return []
             
-        chunk_ids = [idx for idx, _ in raw_results]
-        db_chunks = await cls.get_chunks_by_ids(db, chunk_ids)
-        
-        # Filter candidates by allowed document IDs and structure them
         candidates = []
         candidate_vectors = []
         
-        # Normalize query vector for cosine calculations
-        q_vec = query_vector / np.linalg.norm(query_vector)
-        
-        for chunk_id, score in raw_results:
-            chunk = db_chunks.get(chunk_id)
-            if chunk:
-                if document_ids is not None and chunk.document_id not in document_ids:
-                    continue
-                
-                # Reconstruct vector from FAISS or re-embed if reconstruction fails
-                try:
-                    # IndexIDMap -> IndexFlatIP. Reconstruct is supported
-                    vec = vector_store.index.reconstruct(chunk_id)
-                except Exception:
-                    # Fallback to generating embedding if reconstruction fails
-                    vec = embedder.get_embedding(chunk.text_content)
-                
-                vec = vec / np.linalg.norm(vec)
-                candidates.append((chunk, score))
+        for chunk, score in raw_results:
+            if chunk.embedding is not None:
+                vec = np.array(chunk.embedding, dtype=np.float32)
+                norm = np.linalg.norm(vec)
+                if norm > 0:
+                    vec = vec / norm
+                candidates.append((chunk, float(score)))
                 candidate_vectors.append(vec)
                 
         if not candidates:
@@ -117,17 +98,14 @@ class Retriever:
                 if i in selected_indices:
                     continue
                     
-                # Calculate similarity to query (pre-calculated score)
                 sim_to_query = candidates[i][1]
                 
-                # Calculate max similarity to already selected candidates
                 max_sim_to_selected = -float('inf')
                 for sel_idx in selected_indices:
                     sim_to_sel = np.dot(candidate_vectors[i], candidate_vectors[sel_idx])
                     if sim_to_sel > max_sim_to_selected:
                         max_sim_to_selected = sim_to_sel
                         
-                # MMR formula
                 mmr_score = lambda_val * sim_to_query - (1 - lambda_val) * max_sim_to_selected
                 
                 if mmr_score > best_mmr:
@@ -149,45 +127,38 @@ class Retriever:
         document_ids: List[int] = None, 
         semantic_weight: float = 0.7
     ) -> List[Tuple[DocumentChunk, float]]:
-        """Combines FAISS Semantic Search and SQL text-based keyword matching."""
+        """Combines pgvector Semantic Search and database-backed keyword matching."""
+        if document_ids is not None and not document_ids:
+            return []
+
         # 1. Semantic Candidates
         semantic_results = await cls.semantic_search(db, query, k=k*2, document_ids=document_ids)
         
-        # 2. Keyword Search Candidates
-        # Split terms to search database chunks using SQL ILIKE
+        # 2. Keyword Search Candidates using database SQL filtering (ILIKE)
         terms = [t.strip() for t in query.split() if len(t.strip()) > 2]
         keyword_results = []
         if terms:
-            # Build dynamic search queries for document chunks
-            # In production, we'd use pg_trgm or PostgreSQL Full-Text Search.
-            # Here we use an async query for matching terms.
+            conditions = [DocumentChunk.text_content.ilike(f"%{term}%") for term in terms]
             sql_stmt = select(DocumentChunk)
             if document_ids:
                 sql_stmt = sql_stmt.where(DocumentChunk.document_id.in_(document_ids))
             
-            # Simple keyword matching across document content
-            # We can find matches that contain at least one term
-            # and count matches for scoring
+            sql_stmt = sql_stmt.where(or_(*conditions)).limit(k * 2)
             res = await db.execute(sql_stmt)
-            all_chunks = res.scalars().all()
+            keyword_chunks = res.scalars().all()
             
             scored_keyword_chunks = []
-            for chunk in all_chunks:
+            for chunk in keyword_chunks:
                 match_count = sum(1 for term in terms if term.lower() in chunk.text_content.lower())
-                if match_count > 0:
-                    # Simple keyword matching score normalized by terms count
-                    score = match_count / len(terms)
-                    scored_keyword_chunks.append((chunk, score))
+                score = match_count / len(terms)
+                scored_keyword_chunks.append((chunk, score))
             
-            # Sort by keyword score descending
             scored_keyword_chunks.sort(key=lambda x: x[1], reverse=True)
-            keyword_results = scored_keyword_chunks[:k*2]
+            keyword_results = scored_keyword_chunks
 
         # 3. Reciprocal Rank Fusion / Weighted Score Combination
-        # Create a dict of chunk_id -> (chunk_model, combined_score)
         combined_scores: Dict[int, Tuple[DocumentChunk, float]] = {}
         
-        # Normalize semantic scores to range [0, 1] if not already
         sem_max = max([score for _, score in semantic_results]) if semantic_results else 1.0
         sem_min = min([score for _, score in semantic_results]) if semantic_results else 0.0
         sem_range = sem_max - sem_min if sem_max != sem_min else 1.0
@@ -196,7 +167,6 @@ class Retriever:
             norm_score = (score - sem_min) / sem_range
             combined_scores[chunk.id] = (chunk, norm_score * semantic_weight)
             
-        # Add keyword scores
         kw_weight = 1.0 - semantic_weight
         kw_max = max([score for _, score in keyword_results]) if keyword_results else 1.0
         kw_min = min([score for _, score in keyword_results]) if keyword_results else 0.0
@@ -212,7 +182,6 @@ class Retriever:
             else:
                 combined_scores[chunk.id] = (chunk, added_score)
                 
-        # Sort and return top k
         sorted_results = list(combined_scores.values())
         sorted_results.sort(key=lambda x: x[1], reverse=True)
         

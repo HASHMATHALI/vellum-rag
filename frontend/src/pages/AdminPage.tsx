@@ -85,40 +85,40 @@ export const AdminPage: React.FC = () => {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
           <Card className="p-6 border-gray-200/50 dark:border-white/5 bg-white dark:bg-dark-card flex items-center justify-between">
             <div>
-              <span className="text-xs font-semibold uppercase tracking-wider text-gray-500">Registered Users</span>
-              <h3 className="text-3xl font-extrabold font-display mt-1">{stats.total_users}</h3>
+              <span className="text-[10px] font-bold uppercase tracking-wider text-gray-400 dark:text-dark-muted">Registered Users</span>
+              <h3 className="text-3xl font-black font-display mt-1">{stats.total_users}</h3>
             </div>
-            <div className="w-10 h-10 rounded-xl bg-brand-100 dark:bg-brand-950/40 text-brand-500 flex items-center justify-center">
+            <div className="w-10 h-10 rounded-xl bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-200 flex items-center justify-center">
               <Users className="w-5 h-5" />
             </div>
           </Card>
 
           <Card className="p-6 border-gray-200/50 dark:border-white/5 bg-white dark:bg-dark-card flex items-center justify-between">
             <div>
-              <span className="text-xs font-semibold uppercase tracking-wider text-gray-500">Indexed Files</span>
-              <h3 className="text-3xl font-extrabold font-display mt-1">{stats.total_documents}</h3>
+              <span className="text-[10px] font-bold uppercase tracking-wider text-gray-400 dark:text-dark-muted">Indexed Files</span>
+              <h3 className="text-3xl font-black font-display mt-1">{stats.total_documents}</h3>
             </div>
-            <div className="w-10 h-10 rounded-xl bg-indigo-100 dark:bg-indigo-950/40 text-indigo-500 flex items-center justify-center">
+            <div className="w-10 h-10 rounded-xl bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-200 flex items-center justify-center">
               <FileText className="w-5 h-5" />
             </div>
           </Card>
 
           <Card className="p-6 border-gray-200/50 dark:border-white/5 bg-white dark:bg-dark-card flex items-center justify-between">
             <div>
-              <span className="text-xs font-semibold uppercase tracking-wider text-gray-500">Queries (24h)</span>
-              <h3 className="text-3xl font-extrabold font-display mt-1">{stats.queries_today}</h3>
+              <span className="text-[10px] font-bold uppercase tracking-wider text-gray-400 dark:text-dark-muted">Queries (24h)</span>
+              <h3 className="text-3xl font-black font-display mt-1">{stats.queries_today}</h3>
             </div>
-            <div className="w-10 h-10 rounded-xl bg-purple-100 dark:bg-purple-950/40 text-purple-500 flex items-center justify-center">
+            <div className="w-10 h-10 rounded-xl bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-200 flex items-center justify-center">
               <MessageSquare className="w-5 h-5" />
             </div>
           </Card>
 
           <Card className="p-6 border-gray-200/50 dark:border-white/5 bg-white dark:bg-dark-card flex items-center justify-between">
             <div>
-              <span className="text-xs font-semibold uppercase tracking-wider text-gray-500">Storage Used</span>
-              <h3 className="text-3xl font-extrabold font-display mt-1">{stats.storage_used_mb} MB</h3>
+              <span className="text-[10px] font-bold uppercase tracking-wider text-gray-400 dark:text-dark-muted">Storage Used</span>
+              <h3 className="text-3xl font-black font-display mt-1">{stats.storage_used_mb} MB</h3>
             </div>
-            <div className="w-10 h-10 rounded-xl bg-emerald-100 dark:bg-emerald-950/40 text-emerald-500 flex items-center justify-center">
+            <div className="w-10 h-10 rounded-xl bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-200 flex items-center justify-center">
               <HardDrive className="w-5 h-5" />
             </div>
           </Card>
@@ -151,7 +151,7 @@ export const AdminPage: React.FC = () => {
 
                 <div className="flex items-center justify-between p-3 rounded-xl bg-gray-50 dark:bg-dark-bg border border-gray-200/30 dark:border-white/5">
                   <div className="flex items-center gap-2">
-                    <span className="text-sm font-semibold">FAISS Vector store</span>
+                    <span className="text-sm font-semibold">pgvector Database Extension</span>
                   </div>
                   {health.services.vector_store === 'healthy' ? (
                     <span className="inline-flex items-center gap-1 text-xs font-bold text-emerald-500">

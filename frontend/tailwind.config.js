@@ -9,22 +9,22 @@ export default {
     extend: {
       colors: {
         brand: {
-          50: '#f5f7ff',
-          100: '#ebf0ff',
-          200: '#dae3ff',
-          300: '#bdcbff',
-          400: '#94a9ff',
-          500: '#637bff', // Core Brand Blue
-          600: '#3d52f6',
-          700: '#2a3ce3',
-          800: '#2230bc',
-          900: '#202b94',
+          50: '#fafafa',
+          100: '#f4f4f5',
+          200: '#e4e4e7',
+          300: '#d4d4d8',
+          400: '#a1a1aa',
+          500: '#18181b', // Zinc 900
+          600: '#09090b', // Zinc 950
+          700: '#71717a',
+          800: '#52525b',
+          900: '#3f3f46',
         },
         dark: {
-          bg: '#0B0F19',       // Deep visual dark blue background
-          card: '#161F30',     // Contrasted card color
-          border: '#23334E',   // Borders
-          muted: '#6B7C97'     // Slate text
+          bg: '#121214',       // Soft Charcoal (Lite Dark Mode)
+          card: '#18181c',     // Clean Dark Slate Card
+          border: '#27272a',   // Zinc-800 border line
+          muted: '#a1a1aa'     // Zinc-400 Muted text
         }
       },
       fontFamily: {

@@ -1,6 +1,8 @@
 import os
 import pypdf
 import docx
+import requests
+import tempfile
 from typing import List, Dict
 
 class FileParser:
@@ -92,16 +94,39 @@ class FileParser:
 
     @classmethod
     def parse(cls, filepath: str, file_type: str) -> List[Dict[str, any]]:
-        """Main routing method for file parsing."""
-        if not os.path.exists(filepath):
-            raise FileNotFoundError(f"File not found: {filepath}")
-            
-        file_type = file_type.lower().strip(".")
-        if file_type == "pdf":
-            return cls.parse_pdf(filepath)
-        elif file_type == "docx":
-            return cls.parse_docx(filepath)
-        elif file_type in ["txt", "md", "markdown"]:
-            return cls.parse_txt(filepath)
-        else:
-            raise ValueError(f"Unsupported file type: .{file_type}")
+        """Main routing method for file parsing. Handles local paths and remote URLs."""
+        is_remote = filepath.startswith("http://") or filepath.startswith("https://")
+        
+        target_path = filepath
+        temp_file = None
+        
+        try:
+            if is_remote:
+                suffix = f".{file_type.lower().strip('.')}"
+                temp_file = tempfile.NamedTemporaryFile(delete=False, suffix=suffix)
+                
+                response = requests.get(filepath, timeout=30)
+                response.raise_for_status()
+                temp_file.write(response.content)
+                temp_file.close()
+                target_path = temp_file.name
+                
+            if not os.path.exists(target_path):
+                raise FileNotFoundError(f"File not found: {target_path}")
+                
+            file_type = file_type.lower().strip(".")
+            if file_type == "pdf":
+                return cls.parse_pdf(target_path)
+            elif file_type == "docx":
+                return cls.parse_docx(target_path)
+            elif file_type in ["txt", "md", "markdown"]:
+                return cls.parse_txt(target_path)
+            else:
+                raise ValueError(f"Unsupported file type: .{file_type}")
+                
+        finally:
+            if is_remote and temp_file and os.path.exists(temp_file.name):
+                try:
+                    os.remove(temp_file.name)
+                except Exception:
+                    pass

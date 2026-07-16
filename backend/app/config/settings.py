@@ -22,13 +22,22 @@ class Settings(BaseSettings):
     # Groq API
     GROQ_API_KEY: str = ""
     
+    # Custom Admin Credentials for Deployment
+    ADMIN_EMAIL: str = "admin@vellum.ai"
+    ADMIN_PASSWORD: str = "admin123"
+    
     # Storage
     UPLOAD_DIR: str = "uploads"
     VECTOR_STORE_DIR: str = "vector_store"
     
+    # Supabase (Optional for stateless deployment)
+    SUPABASE_URL: str = ""
+    SUPABASE_KEY: str = ""
+    SUPABASE_STORAGE_BUCKET: str = "documents"
+    
     # RAG Settings
-    CHUNK_SIZE: int = 500
-    CHUNK_OVERLAP: int = 50
+    CHUNK_SIZE: int = 1500
+    CHUNK_OVERLAP: int = 200
     MAX_UPLOAD_SIZE_MB: int = 20
 
     model_config = SettingsConfigDict(

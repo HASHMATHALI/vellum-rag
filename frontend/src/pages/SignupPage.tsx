@@ -4,8 +4,6 @@ import { useAuth } from '../hooks/useAuth';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { Card } from '../components/ui/Card';
-import { Cpu } from 'lucide-react';
-
 export const SignupPage: React.FC = () => {
   const { register } = useAuth();
   const navigate = useNavigate();
@@ -44,9 +42,8 @@ export const SignupPage: React.FC = () => {
         
         {/* Brand Header */}
         <div className="text-center">
-          <Link to="/" className="inline-flex items-center gap-2 font-display text-3xl font-extrabold text-brand-600 dark:text-brand-400">
-            <Cpu className="w-8 h-8 text-brand-500" />
-            <span>AuraRAG</span>
+          <Link to="/" className="inline-flex items-center gap-2 font-display text-3xl font-black text-gray-900 dark:text-white">
+            <span>Vellum <span className="font-normal text-zinc-500 dark:text-zinc-400">Chat</span></span>
           </Link>
           <h2 className="mt-3 text-2xl font-bold tracking-tight">Create your Account</h2>
           <p className="mt-1.5 text-sm text-gray-500 dark:text-dark-muted">
