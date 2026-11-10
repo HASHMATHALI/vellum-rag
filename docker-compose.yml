@@ -5,10 +5,10 @@ services:
     container_name: rag-postgres
     environment:
       POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres_password_change_me
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
       POSTGRES_DB: rag_db
     ports:
-      - "5433:5432"
+      - "127.0.0.1:5433:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
@@ -22,7 +22,7 @@ services:
     image: redis:7-alpine
     container_name: rag-redis
     ports:
-      - "6380:6379"
+      - "127.0.0.1:6380:6379"
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 5s
@@ -39,11 +39,13 @@ services:
       - 8.8.8.8
       - 1.1.1.1
     environment:
-      - DATABASE_URL=postgresql+asyncpg://postgres:postgres_password_change_me@postgres:5432/rag_db
+      - DATABASE_URL=postgresql+asyncpg://postgres:${POSTGRES_PASSWORD}@postgres:5432/rag_db
       - REDIS_URL=redis://redis:6379/0
       - GROQ_API_KEY=${GROQ_API_KEY}
-      - JWT_SECRET_KEY=9a7c3d2e9b8f5a1c0d4e3f2a1b6c7d8e9f0a1b2c3d4e5f6a7b8c9d0e1f2a3b4c
+      - JWT_SECRET_KEY=${JWT_SECRET_KEY:?Set JWT_SECRET_KEY in .env (openssl rand -hex 32)}
       - JWT_ALGORITHM=HS256
+      - ADMIN_EMAIL=${ADMIN_EMAIL:-admin@vellum.ai}
+      - ADMIN_PASSWORD=${ADMIN_PASSWORD:?Set ADMIN_PASSWORD in .env}
       - ACCESS_TOKEN_EXPIRE_MINUTES=1440
       - UPLOAD_DIR=/app/uploads
       - SUPABASE_URL=${SUPABASE_URL}

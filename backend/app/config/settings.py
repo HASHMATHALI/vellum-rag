@@ -1,4 +1,6 @@
 import os
+import logging
+import secrets
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from pydantic import Field
 
@@ -9,10 +11,13 @@ class Settings(BaseSettings):
     PORT: int = 8000
     
     # Auth
-    JWT_SECRET_KEY: str = "9a7c3d2e9b8f5a1c0d4e3f2a1b6c7d8e9f0a1b2c3d4e5f6a7b8c9d0e1f2a3b4c"
+    JWT_SECRET_KEY: str = ""
     JWT_ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 1440
     
+    # Comma-separated list of allowed browser origins ("*" allows any)
+    CORS_ORIGINS: str = "*"
+
     # DB
     DATABASE_URL: str = "postgresql+asyncpg://postgres:postgres_password_change_me@localhost:5432/rag_db"
     
@@ -24,7 +29,7 @@ class Settings(BaseSettings):
     
     # Custom Admin Credentials for Deployment
     ADMIN_EMAIL: str = "admin@vellum.ai"
-    ADMIN_PASSWORD: str = "admin123"
+    ADMIN_PASSWORD: str = ""
     
     # Storage
     UPLOAD_DIR: str = "uploads"
@@ -48,5 +53,18 @@ class Settings(BaseSettings):
 
 # Create folders if they don't exist
 settings = Settings()
+
+# Secrets that were once published in this repository must never be trusted.
+_KNOWN_LEAKED_SECRETS = {
+    "9a7c3d2e9b8f5a1c0d4e3f2a1b6c7d8e9f0a1b2c3d4e5f6a7b8c9d0e1f2a3b4c",
+}
+if not settings.JWT_SECRET_KEY or settings.JWT_SECRET_KEY in _KNOWN_LEAKED_SECRETS or len(settings.JWT_SECRET_KEY) < 32:
+    # Fall back to a random per-process key: the API keeps working, but sessions end on
+    # restart and multiple workers will not share tokens. Set JWT_SECRET_KEY to fix that.
+    logging.getLogger(__name__).warning(
+        "JWT_SECRET_KEY is missing, too short, or a publicly known value. "
+        "Using a random ephemeral key. Set JWT_SECRET_KEY (openssl rand -hex 32)."
+    )
+    settings.JWT_SECRET_KEY = secrets.token_hex(32)
+
 os.makedirs(settings.UPLOAD_DIR, exist_ok=True)
-os.makedirs(settings.VECTOR_STORE_DIR, exist_ok=True)

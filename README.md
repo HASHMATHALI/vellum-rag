@@ -16,7 +16,7 @@ AuraRAG is a secure, AI-powered Retrieval-Augmented Generation (RAG) platform. I
 ## Directory Layout
 
 ```text
-rag-platform/ (c:\RAG)
+rag-platform/
 ├── backend/
 │   ├── app/
 │   │   ├── api/          # FastAPI Routes (Auth, Documents, Chat, Admin)
@@ -57,8 +57,8 @@ rag-platform/ (c:\RAG)
 2. Obtain a free Groq API key from the [Groq Console](https://console.groq.com/).
 
 ### Running the Platform
-1. Clone or navigate to the workspace directory `c:\RAG`.
-2. Edit the `docker-compose.yml` file and replace `gsk_your_groq_api_key_goes_here` with your actual Groq API key.
+1. Clone or navigate to the workspace directory the repository root.
+2. Copy `.env.example` to `.env` and fill in `GROQ_API_KEY`, `JWT_SECRET_KEY` (`openssl rand -hex 32`), `POSTGRES_PASSWORD` and `ADMIN_PASSWORD`. Docker Compose refuses to start without them.
 3. Start the containers using Docker Compose:
    ```bash
    docker-compose up --build
@@ -81,7 +81,7 @@ rag-platform/ (c:\RAG)
 
 ## Project Documentation
 Detailed specifications are available in the `/docs` directory:
-- [System Architecture Flow](file:///c:/RAG/docs/architecture.md)
-- [REST API Specifications](file:///c:/RAG/docs/api_documentation.md)
-- [Database Metadata Layout](file:///c:/RAG/docs/db_diagram.md)
-- [Multi-Cloud Deployment Guide](file:///c:/RAG/docs/deployment_guide.md)
+- [System Architecture Flow](docs/architecture.md)
+- [REST API Specifications](docs/api_documentation.md)
+- [Database Metadata Layout](docs/db_diagram.md)
+- [Multi-Cloud Deployment Guide](docs/deployment_guide.md)

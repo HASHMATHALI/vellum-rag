@@ -27,7 +27,7 @@ app = FastAPI(
 # CORS Policy configuration
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"], # In production, restrict to frontend domain
+    allow_origins=[o.strip() for o in settings.CORS_ORIGINS.split(",") if o.strip()] or ["*"],
     allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -81,7 +81,11 @@ async def on_startup():
             # Check admin
             result = await db.execute(select(User).where(User.email == settings.ADMIN_EMAIL))
             admin_user = result.scalars().first()
-            if admin_user is None:
+            if admin_user is None and len(settings.ADMIN_PASSWORD) < 8:
+                logger.warning(
+                    "No admin account was created: set ADMIN_PASSWORD (8+ characters) to seed one."
+                )
+            elif admin_user is None:
                 admin_user = User(
                     email=settings.ADMIN_EMAIL,
                     hashed_password=get_password_hash(settings.ADMIN_PASSWORD),
