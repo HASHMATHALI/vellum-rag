@@ -1,5 +1,11 @@
 # AuraRAG — Production-Ready AI Semantic Search Platform
 
+> **Identity.** The interface is styled after its name: calfskin parchment, iron-gall ink and
+> rubric red, with a faint ruled-manuscript texture, Young Serif headings and square corners.
+> The whole palette is defined once in `frontend/tailwind.config.js` by replacing Tailwind's
+> zinc/gray scales, so every screen follows it in light and dark mode.
+
+
 AuraRAG is a secure, AI-powered Retrieval-Augmented Generation (RAG) platform. It provides instant concept-based answers over PDF, DOCX, TXT, and Markdown documents. The application can run as a standalone website or as a deployable REST API gateway for mobile/web client integrations.
 
 ---
