@@ -3,7 +3,7 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { useChat } from '../hooks/useChat';
 import { Card } from './ui/Card';
-import { Button } from './ui/Button';
+import { Gloss } from './Gloss';
 import { 
   MessageSquare, 
   Plus, 
@@ -227,12 +227,14 @@ export const ChatInterface: React.FC = () => {
                     </div>
                   </div>
 
-                  {/* Sources Cited Preview Tiles */}
+                  {!isUser && msg.gloss && <Gloss report={msg.gloss} />}
+
+                  {/* Retrieved passage tiles */}
                   {!isUser && msg.sources && msg.sources.length > 0 && !msg.content.toLowerCase().includes('general knowledge') && (
                     <div className="mt-2.5 space-y-2 w-full animate-fade-in">
                       <span className="text-[10px] font-bold uppercase tracking-wider text-gray-400 dark:text-dark-muted flex items-center gap-1.5 px-1">
                         <BookOpen className="w-4 h-4 text-brand-500" />
-                        <span>Sources Cited ({msg.sources.length})</span>
+                        <span>Passages retrieved ({msg.sources.length})</span>
                       </span>
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4.5 w-full">
                         {msg.sources.map((src, sIdx) => (

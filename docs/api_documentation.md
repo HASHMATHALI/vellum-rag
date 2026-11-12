@@ -120,7 +120,10 @@ Streams an LLM answer back.
   - Event: `session` with session ID details.
   - Event: `sources` with list of citing document chunks.
   - Data: JSON objects containing text reply tokens: `{"content": "..."}`.
+  - Event: `gloss` after the last token, with `{"gloss": {"claims": [...], "summary": {...}}}`: each sentence of the answer, its citations, and whether the cited passage contains it (`supported`, `partial`, `unsupported`, `phantom`, `traceable`, `uncited`).
   - Event: `close` with token `[DONE]` signifying stream termination.
+
+`GET /api/history/{session_id}` returns the same `gloss` object on each assistant message.
 
 ### GET `/api/history`
 Lists all active chat threads of the logged-in user.

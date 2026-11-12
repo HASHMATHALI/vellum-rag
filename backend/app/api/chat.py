@@ -5,6 +5,7 @@ from typing import List
 from app.database.connection import get_db
 from app.api.schemas import QueryRequest, ChatSessionResponse, MessageResponse
 from app.services.chat_service import ChatService
+from app.retrieval.gloss import audit_answer
 from app.auth.dependencies import get_current_user
 from app.models.user import User
 
@@ -56,4 +57,12 @@ async def get_chat_messages(
     db: AsyncSession = Depends(get_db)
 ):
     """Fetches all messages in a specific chat session thread."""
-    return await ChatService.get_session_messages(db, session_id, current_user.id)
+    messages = await ChatService.get_session_messages(db, session_id, current_user.id)
+    out = []
+    for m in messages:
+        item = MessageResponse.model_validate(m)
+        if m.role == "assistant":
+            # deterministic, so it is recomputed on read rather than stored
+            item.gloss = audit_answer(m.content, m.sources or [])
+        out.append(item)
+    return out

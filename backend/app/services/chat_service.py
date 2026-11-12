@@ -8,6 +8,7 @@ from app.models.chat import ChatSession, ChatMessage
 from app.models.document import DocumentChunk, Document
 from app.models.user import User
 from app.retrieval.retriever import Retriever
+from app.retrieval.gloss import audit_answer
 from app.llm.groq_client import groq_client
 from app.prompts.rag_prompts import SYSTEM_RAG_PROMPT, SYSTEM_REFORMULATE_PROMPT
 
@@ -197,11 +198,18 @@ class ChatService:
             # Write chunk in standard SSE formatting
             yield f"data: {json.dumps({'content': chunk})}\n\n"
 
+        full_reply = "".join(assistant_reply_accumulated)
+
+        # Gloss: check the finished answer against the passages it cites
+        try:
+            yield f"event: gloss\ndata: {json.dumps({'gloss': audit_answer(full_reply, sources)})}\n\n"
+        except Exception as e:  # the check must never break a delivered answer
+            logger.warning(f"Gloss check failed: {e}")
+
         # Yield close event
         yield "event: close\ndata: [DONE]\n\n"
 
         # 8. Save Assistant message to Database asynchronously
-        full_reply = "".join(assistant_reply_accumulated)
         if full_reply.strip():
             # Since connection may have yielded, create a clean async session
             from app.database.connection import async_session

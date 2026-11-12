@@ -1,4 +1,4 @@
-# AuraRAG — Production-Ready AI Semantic Search Platform
+# Vellum RAG — document question answering that checks its own citations
 
 > **Identity.** The interface is styled after its name: calfskin parchment, iron-gall ink and
 > rubric red, with a faint ruled-manuscript texture, Young Serif headings and square corners.
@@ -6,7 +6,24 @@
 > zinc/gray scales, so every screen follows it in light and dark mode.
 
 
-AuraRAG is a secure, AI-powered Retrieval-Augmented Generation (RAG) platform. It provides instant concept-based answers over PDF, DOCX, TXT, and Markdown documents. The application can run as a standalone website or as a deployable REST API gateway for mobile/web client integrations.
+Vellum RAG is a Retrieval-Augmented Generation (RAG) platform with accounts and per-user document libraries. It answers questions over PDF, DOCX, TXT and Markdown files, cites the file and page for each fact, and then checks those citations. It runs as a website or as a REST API.
+
+## Gloss: the citation check
+
+A model that is told to cite can still cite the wrong page, cite a file it was never shown, or state a figure that is not in the passage. After every answer Vellum runs a **gloss** (the margin note a reader writes beside a manuscript line) and shows the result under the reply:
+
+| Verdict | Meaning |
+|---|---|
+| Found in cited passage | the cited passage contains most of the sentence's terms |
+| Partly found | some of the terms, or a figure in the sentence is missing from the passage |
+| Not found in cited passage | the citation resolves, but the passage does not say this |
+| Cites a passage that was not retrieved | the file/page was never given to the model |
+| No citation, but found in a passage | uncited, and the checker names the passage it matches |
+| No citation, not found | uncited and not in any retrieved passage |
+
+The check is `backend/app/retrieval/gloss.py`: plain Python, no model call, so it is repeatable and adds no API cost. It is streamed as a `gloss` event after the answer and recomputed when a conversation is reopened, so it needs no database change.
+
+**Limits.** It compares wording (stop-words removed, light stemming) and figures. It cannot judge whether a paraphrase is faithful or whether reasoning across passages is sound, so a "found" verdict means the words are there, not that the claim is true. Run its tests with `pytest tests/test_gloss.py`.
 
 ---
 
@@ -14,7 +31,7 @@ AuraRAG is a secure, AI-powered Retrieval-Augmented Generation (RAG) platform. I
 
 - **Backend**: FastAPI (Python 3.12), SQLAlchemy (Async), Uvicorn, PostgreSQL, Redis (Caching and Rate Limiting).
 - **Frontend**: React (TypeScript), Tailwind CSS, Vite, Axios, Lucide React (Icons).
-- **AI Core**: Sentence Transformers (`all-MiniLM-L6-v2` dense vectors), FAISS (`IndexIDMap` + `IndexFlatIP`), Groq API (`Llama-3.3-70B-Versatile`).
+- **AI Core**: Sentence Transformers (`all-MiniLM-L6-v2`, 384-dimension vectors), pgvector in PostgreSQL for similarity search, Groq API (`Llama-3.3-70B-Versatile`).
 - **Gateway**: Nginx Reverse Proxy (EventSource chunk streaming, WebSocket routing).
 
 ---
@@ -34,7 +51,7 @@ rag-platform/
 │   │   ├── embeddings/   # Lazy-load Local SentenceTransformers
 │   │   ├── vectorstore/  # FAISS database managers
 │   │   ├── ingestion/    # Text Parsers and Sliding Chunks splitters
-│   │   ├── retrieval/    # Semantic, MMR, and Hybrid search logic
+│   │   ├── retrieval/    # Semantic, MMR and Hybrid search, plus the gloss citation check
 │   │   ├── llm/          # Groq streaming completions wrappers
 │   │   └── main.py       # App Startup & database synchronization
 │   ├── requirements.txt  # Python packages
@@ -81,7 +98,7 @@ rag-platform/
 1. **User Table**: Manages profiles and authorization credentials (Admin, User).
 2. **Document & Chunk Tables**: Keeps metadata of uploaded files and maps text segments.
 3. **Conversations Tables**: Stores message threads and SSE streaming replies.
-4. **Vector Store ID Mappings**: FAISS utilizes an `IndexIDMap` wrapper which maps the Postgres chunk primary keys (`DocumentChunk.id`) to dense 384-dimension vector coordinates inside `vector_store/faiss_index.bin` for sub-100ms similarity lookups.
+4. **Vectors**: each chunk row carries its 384-dimension embedding in a pgvector column (`DocumentChunk.embedding`); retrieval orders by cosine distance in SQL.
 
 ---
 

@@ -81,9 +81,9 @@ class GroqClient:
                 logger.error(f"GroqClient: API call failed ({e})")
                 return ""
         else:
-            # Return last message content as fallback query
-            user_msg = next((m["content"] for m in reversed(messages) if m["role"] == "user"), "")
-            return user_msg
+            # No model available. Return nothing so callers fall back to the user's own
+            # wording (this used to return the whole reformulation prompt as the search query).
+            return ""
 
 # Instantiate global Groq client
 groq_client = GroqClient()
