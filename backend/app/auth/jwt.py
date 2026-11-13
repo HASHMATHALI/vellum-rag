@@ -11,8 +11,23 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
     except Exception:
         return False
 
+MAX_PASSWORD_BYTES = 72  # bcrypt only uses the first 72 bytes; bcrypt>=5 refuses longer input
+
+
+def password_problem(password: str, min_chars: int = 6) -> Optional[str]:
+    """Why a new password is unacceptable, or None when it is fine."""
+    if len(password) < min_chars:
+        return f"Password must be at least {min_chars} characters."
+    if len(password.encode("utf-8")) > MAX_PASSWORD_BYTES:
+        return f"Password must be at most {MAX_PASSWORD_BYTES} bytes (about {MAX_PASSWORD_BYTES} plain letters)."
+    return None
+
+
 def get_password_hash(password: str) -> str:
     """Hash the cleartext password using bcrypt."""
+    problem = password_problem(password, min_chars=1)
+    if problem:
+        raise ValueError(problem)
     salt = bcrypt.gensalt()
     hashed = bcrypt.hashpw(password.encode('utf-8'), salt)
     return hashed.decode('utf-8')

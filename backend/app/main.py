@@ -65,13 +65,18 @@ async def on_startup():
         from app.auth.jwt import get_password_hash
         from sqlalchemy.future import select
         async with async_session() as db:
-            # Check guest
+            # Optional guest login. It used to be created on every deployment with the
+            # password "guest123", which is published in this repository.
+            from app.auth.jwt import password_problem
             result = await db.execute(select(User).where(User.email == "guest@vellum.ai"))
             guest = result.scalars().first()
-            if guest is None:
+            if guest is None and settings.GUEST_PASSWORD and password_problem(settings.GUEST_PASSWORD, min_chars=8):
+                logger.warning("GUEST_PASSWORD is set but unusable (%s); no guest account created.",
+                               password_problem(settings.GUEST_PASSWORD, min_chars=8))
+            elif guest is None and settings.GUEST_PASSWORD:
                 guest = User(
                     email="guest@vellum.ai",
-                    hashed_password=get_password_hash("guest123"),
+                    hashed_password=get_password_hash(settings.GUEST_PASSWORD),
                     full_name="Guest User",
                     role="user",
                     is_active=True
@@ -81,9 +86,9 @@ async def on_startup():
             # Check admin
             result = await db.execute(select(User).where(User.email == settings.ADMIN_EMAIL))
             admin_user = result.scalars().first()
-            if admin_user is None and len(settings.ADMIN_PASSWORD) < 8:
+            if admin_user is None and password_problem(settings.ADMIN_PASSWORD, min_chars=8):
                 logger.warning(
-                    "No admin account was created: set ADMIN_PASSWORD (8+ characters) to seed one."
+                    "No admin account was created: set ADMIN_PASSWORD (8 to 72 bytes) to seed one."
                 )
             elif admin_user is None:
                 admin_user = User(

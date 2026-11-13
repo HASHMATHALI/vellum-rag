@@ -30,6 +30,8 @@ class Settings(BaseSettings):
     # Custom Admin Credentials for Deployment
     ADMIN_EMAIL: str = "admin@vellum.ai"
     ADMIN_PASSWORD: str = ""
+    # Optional demo login. No guest account is created unless this is set (8-72 bytes).
+    GUEST_PASSWORD: str = ""
     
     # Storage
     UPLOAD_DIR: str = "uploads"

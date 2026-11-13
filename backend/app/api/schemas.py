@@ -1,4 +1,5 @@
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import BaseModel, EmailStr, Field, field_validator
+from app.auth.jwt import password_problem
 from typing import List, Optional, Dict, Any
 from datetime import datetime
 
@@ -7,6 +8,14 @@ class UserRegister(BaseModel):
     email: EmailStr
     password: str = Field(..., min_length=6, description="Password must be at least 6 characters")
     full_name: str = Field(..., min_length=2, description="Name must be at least 2 characters")
+
+    @field_validator("password")
+    @classmethod
+    def _password_ok(cls, v: str) -> str:
+        problem = password_problem(v)
+        if problem:
+            raise ValueError(problem)
+        return v
 
 class UserLogin(BaseModel):
     email: EmailStr
@@ -26,6 +35,16 @@ class TokenResponse(BaseModel):
 class UserProfileUpdate(BaseModel):
     full_name: Optional[str] = None
     password: Optional[str] = None
+
+    @field_validator("password")
+    @classmethod
+    def _password_ok(cls, v: Optional[str]) -> Optional[str]:
+        # previously an empty string was accepted and hashed as the new password
+        if v is not None:
+            problem = password_problem(v)
+            if problem:
+                raise ValueError(problem)
+        return v
 
 # --- Document Schemas ---
 class DocumentResponse(BaseModel):
