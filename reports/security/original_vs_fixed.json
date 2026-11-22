@@ -1,0 +1,19 @@
+{
+ "original_20c2aef": {
+  "S1_shared_guest_data_visible_to_other_visitor": true,
+  "S2_forged_admin_token_accepted": true,
+  "S3_default_admin_login": true,
+  "S6_no_login_rate_limit_25_attempts": true,
+  "S11_binary_disguised_as_text_accepted": true,
+  "S10_cors_allows_any_origin": true
+ },
+ "fixed": {
+  "S1_shared_guest_data_visible_to_other_visitor": false,
+  "S2_forged_admin_token_accepted": false,
+  "S3_default_admin_login": false,
+  "S6_no_login_rate_limit_25_attempts": false,
+  "S11_binary_disguised_as_text_accepted": false,
+  "S10_cors_allows_any_origin": false
+ },
+ "note": "True = the vulnerable behaviour was reproduced."
+}

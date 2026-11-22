@@ -1,85 +1,91 @@
+# Production-like local stack. Secrets come from .env (see .env.example); nothing sensitive is hard-coded here.
+#   cp .env.example .env   # then fill in the REQUIRED values
+#   docker compose up -d --build
+#   open http://localhost:8080
 services:
-  # 1. Relational Metadata Database
   postgres:
     image: pgvector/pgvector:pg16
-    container_name: rag-postgres
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres_password_change_me
-      POSTGRES_DB: rag_db
-    ports:
-      - "5433:5432"
+      POSTGRES_USER: ${POSTGRES_USER:-vellum}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+      POSTGRES_DB: ${POSTGRES_DB:-rag_db}
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -d rag_db"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-vellum} -d ${POSTGRES_DB:-rag_db}"]
       interval: 5s
       timeout: 5s
-      retries: 5
+      retries: 10
+    networks: [internal]          # not published to the host
+    restart: unless-stopped
 
-  # 2. Redis Caching & Rate Limiting
   redis:
     image: redis:7-alpine
-    container_name: rag-redis
-    ports:
-      - "6380:6379"
+    command: ["redis-server", "--save", "", "--appendonly", "no"]
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 5s
       timeout: 5s
       retries: 5
+    networks: [internal]
+    restart: unless-stopped
 
-  # 3. Python FastAPI Backend Service
   backend:
-    build:
-      context: ./backend
-      dockerfile: Dockerfile
-    container_name: rag-backend
-    dns:
-      - 8.8.8.8
-      - 1.1.1.1
+    build: ./backend
     environment:
-      - DATABASE_URL=postgresql+asyncpg://postgres:postgres_password_change_me@postgres:5432/rag_db
-      - REDIS_URL=redis://redis:6379/0
-      - GROQ_API_KEY=${GROQ_API_KEY}
-      - JWT_SECRET_KEY=9a7c3d2e9b8f5a1c0d4e3f2a1b6c7d8e9f0a1b2c3d4e5f6a7b8c9d0e1f2a3b4c
-      - JWT_ALGORITHM=HS256
-      - ACCESS_TOKEN_EXPIRE_MINUTES=1440
-      - UPLOAD_DIR=/app/uploads
-      - SUPABASE_URL=${SUPABASE_URL}
-      - SUPABASE_KEY=${SUPABASE_KEY}
-      - SUPABASE_STORAGE_BUCKET=${SUPABASE_STORAGE_BUCKET}
+      ENVIRONMENT: production
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-vellum}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-rag_db}
+      REDIS_URL: redis://redis:6379/0
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY:?set JWT_SECRET_KEY in .env}
+      GROQ_API_KEY: ${GROQ_API_KEY:?set GROQ_API_KEY in .env}
+      ADMIN_EMAIL: ${ADMIN_EMAIL:-}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-}
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:8080}
+      COOKIE_SECURE: ${COOKIE_SECURE:-false}   # true when served over HTTPS
+      TRUSTED_PROXY_HOPS: "1"
+      SUPABASE_URL: ${SUPABASE_URL:-}
+      SUPABASE_KEY: ${SUPABASE_KEY:-}
+      SUPABASE_STORAGE_BUCKET: ${SUPABASE_STORAGE_BUCKET:-documents}
+      OTEL_ENABLED: ${OTEL_ENABLED:-false}
+      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-http://phoenix:6006/v1/traces}
     volumes:
       - uploads_data:/app/uploads
     depends_on:
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
+      postgres: { condition: service_healthy }
+      redis: { condition: service_healthy }
+    networks: [internal]
+    security_opt: ["no-new-privileges:true"]
+    deploy:
+      resources:
+        limits: { memory: 2g, cpus: "2" }
+    restart: unless-stopped
 
-  # 4. React Vite Frontend Static Asset Server
   frontend:
-    build:
-      context: ./frontend
-      dockerfile: Dockerfile
-    container_name: rag-frontend
-    depends_on:
-      - backend
+    build: ./frontend
+    networks: [internal]
+    security_opt: ["no-new-privileges:true"]
+    restart: unless-stopped
 
-  # 5. Gateway Reverse Proxy Router
   nginx:
-    build:
-      context: ./nginx
-      dockerfile: Dockerfile
-    container_name: rag-nginx
+    build: ./nginx
     ports:
-      - "80:80"
-    depends_on:
-      - backend
-      - frontend
+      - "${HTTP_PORT:-8080}:8080"
+    depends_on: [backend, frontend]
+    networks: [internal]
+    security_opt: ["no-new-privileges:true"]
+    restart: unless-stopped
+
+  # Optional observability: docker compose --profile observability up -d   (UI on http://localhost:6006)
+  phoenix:
+    image: arizephoenix/phoenix:latest
+    profiles: [observability]
+    ports:
+      - "127.0.0.1:6006:6006"
+    networks: [internal]
 
 volumes:
   postgres_data:
-    driver: local
   uploads_data:
-    driver: local
+
+networks:
+  internal:

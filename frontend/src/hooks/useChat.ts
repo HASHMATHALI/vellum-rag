@@ -1,7 +1,10 @@
 import { useState, useCallback } from 'react';
-import api from '../services/api';
+import api, { API_BASE_URL, getCsrfToken, refreshSession } from '../services/api';
 
 export interface Source {
+  ref?: number;
+  cited?: boolean;
+  section?: string | null;
   document_id: number;
   filename: string;
   chunk_index: number;
@@ -63,7 +66,7 @@ export const useChat = () => {
 
   const sendMessage = useCallback(async (
     messageText: string,
-    searchMode: string = 'semantic',
+    searchMode: string = 'hybrid',
     documentIds: number[] | null = null,
     k: number = 5
   ) => {
@@ -92,31 +95,37 @@ export const useChat = () => {
     };
     setMessages(prev => [...prev, tempAssistantMsg]);
 
-    const token = localStorage.getItem('token');
-    
-    const backendUrl = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
-      ? ''
-      : 'https://rag-backend-8pv0.onrender.com';
+    const body = JSON.stringify({
+      message: messageText,
+      session_id: activeSessionId,
+      search_mode: searchMode,
+      document_ids: documentIds,
+      k: k
+    });
+    // Cookies carry the session (HttpOnly); the CSRF token is sent as a header.
+    const post = () => fetch(`${API_BASE_URL}/api/query`, {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': getCsrfToken() || '' },
+      body
+    });
+    let sessionForRefresh: string | null = activeSessionId;
 
     try {
-      // Use vanilla fetch for custom POST streaming headers - call backend directly to bypass static site buffering proxies
-      const response = await fetch(`${backendUrl}/api/query`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({
-          message: messageText,
-          session_id: activeSessionId,
-          search_mode: searchMode,
-          document_ids: documentIds,
-          k: k
-        })
-      });
+      let response = await post();
+      if (response.status === 401 && await refreshSession()) {
+        response = await post();
+      }
 
       if (!response.ok) {
-        throw new Error(`Server returned HTTP status ${response.status}`);
+        let detail = `Server returned HTTP ${response.status}`;
+        try {
+          const err = await response.json();
+          if (typeof err.detail === 'string') detail = err.detail;
+          else if (Array.isArray(err.detail)) detail = err.detail.map((d: { msg?: string }) => d.msg).join('; ');
+        } catch { /* non-JSON error body */ }
+        if (response.status === 429) detail = 'Too many questions in a short time. Please wait a moment.';
+        throw new Error(detail);
       }
 
       const reader = response.body?.getReader();
@@ -127,7 +136,7 @@ export const useChat = () => {
       const decoder = new TextDecoder();
       let buffer = '';
       let currentReplyContent = '';
-      let sourcesList: Source[] = [];
+      let currentEvent = 'message';
 
       while (true) {
         const { value, done } = await reader.read();
@@ -145,27 +154,32 @@ export const useChat = () => {
 
           // SSE format parsing: event or data
           if (trimmed.startsWith('event:')) {
-            const eventType = trimmed.substring(6).trim();
-            // We can read next line if needed, but in our backend, each packet is single-lined
-            // We search for type events
-            if (eventType === 'close') {
-              // Done streaming
-            }
+            currentEvent = trimmed.substring(6).trim();
           } else if (trimmed.startsWith('data:')) {
             const dataStr = trimmed.substring(5).trim();
             if (dataStr === '[DONE]') continue;
             
+            const eventType = currentEvent;
+            currentEvent = 'message';
             try {
               const dataObj = JSON.parse(dataStr);
-              
+
+              if (eventType === 'error') {
+                currentReplyContent += `
+
+*${dataObj.detail || 'The answer could not be completed.'}*`;
+                setMessages(prev => prev.map(m => m.id === assistantMsgId ? { ...m, content: currentReplyContent } : m));
+              } else if (eventType === 'meta') {
+                // timings / token usage / grounding signals: not rendered
+              }
               // Handle custom session initialization
-              if (dataObj.session_id) {
+              else if (dataObj.session_id) {
+                sessionForRefresh = dataObj.session_id;
                 setActiveSessionId(dataObj.session_id);
                 fetchSessions(); // Refresh sessions list
               } 
               // Handle citations list
               else if (Array.isArray(dataObj)) {
-                sourcesList = dataObj;
                 setActiveSources(dataObj);
                 setMessages(prev =>
                   prev.map(m =>
@@ -195,9 +209,10 @@ export const useChat = () => {
       
       // When streaming is completed, replace temporary ID with permanent state sync
       // (Wait briefly for backend database writes)
+      // Reload the persisted thread (also marks which sources were actually cited).
       setTimeout(() => {
-        if (activeSessionId) {
-          loadSessionMessages(activeSessionId);
+        if (sessionForRefresh) {
+          loadSessionMessages(sessionForRefresh);
         }
       }, 500);
 

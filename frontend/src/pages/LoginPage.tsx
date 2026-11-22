@@ -7,24 +7,35 @@ import { Card } from '../components/ui/Card';
 import { Mail, Lock } from 'lucide-react';
 
 export const LoginPage: React.FC = () => {
-  const { login } = useAuth();
+  const { login, loginMfa } = useAuth();
   const navigate = useNavigate();
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [mfaToken, setMfaToken] = useState<string | null>(null);
+  const [code, setCode] = useState('');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email || !password) {
+    if (!mfaToken && (!email || !password)) {
       setError('Please fill in all fields.');
       return;
     }
     setError(null);
     setLoading(true);
     try {
-      await login(email, password);
+      if (mfaToken) {
+        await loginMfa(mfaToken, code);
+        navigate('/dashboard');
+        return;
+      }
+      const result = await login(email, password);
+      if (result.mfaRequired) {
+        setMfaToken(result.mfaToken);
+        return;
+      }
       navigate('/dashboard');
     } catch (err: any) {
       setError(err.message || 'Incorrect email or password.');
@@ -57,6 +68,18 @@ export const LoginPage: React.FC = () => {
               </div>
             )}
 
+            {mfaToken ? (
+              <Input
+                label="Authentication code"
+                id="mfa-code"
+                inputMode="numeric"
+                autoComplete="one-time-code"
+                placeholder="6-digit code or recovery code"
+                value={code}
+                onChange={(e) => setCode(e.target.value)}
+                required
+              />
+            ) : (
             <div className="space-y-4">
               <Input
                 label="Email Address"
@@ -75,12 +98,14 @@ export const LoginPage: React.FC = () => {
                 placeholder="••••••••"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
+                autoComplete="current-password"
                 required
               />
             </div>
+            )}
 
             <Button type="submit" loading={loading} className="w-full">
-              Sign In
+              {mfaToken ? 'Verify' : 'Sign In'}
             </Button>
           </form>
         </Card>

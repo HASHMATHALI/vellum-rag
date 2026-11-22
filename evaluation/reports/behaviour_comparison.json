@@ -1,0 +1,37 @@
+{
+ "original": {
+  "negatives_answered_with_outside_knowledge": [
+   [
+    "q21",
+    "**Answer (based on general knowledge)**   I am answering using general knowledge because the uploaded document"
+   ],
+   [
+    "q22",
+    "**Answer – The uploaded documents do not specify a cloud region for the production database.**    The availabl"
+   ],
+   [
+    "q23",
+    "**I am answering using general knowledge because the uploaded documents do not contain the details.**  ---  ##"
+   ]
+  ],
+  "false_refusals_answerable": [],
+  "citation_rate_answered": 0.45,
+  "context_has_evidence_rate": 0.9,
+  "avg_contexts": 5,
+  "avg_answer_chars": 2556,
+  "q24_hallucination_prone": "**Answer**  I am answering using general knowledge because the uploaded documents do not contain the specific *“p95 end‑to‑end latency”* measurement for Vellum RAG in production.  ---  ### What the provided documents do ",
+  "q25_ambiguous": "**Answer**  The only explicit *default value* mentioned in the provided Vellum Masterclass documentation is the **time‑to‑live (TTL) for JWT access tokens**:  |"
+ },
+ "new": {
+  "negatives_answered_with_outside_knowledge": [],
+  "false_refusals_answerable": [
+   "q01"
+  ],
+  "citation_rate_answered": 1.0,
+  "context_has_evidence_rate": 0.9,
+  "avg_contexts": 2.68,
+  "avg_answer_chars": 531,
+  "q24_hallucination_prone": "I couldn't find information about that in your uploaded documents. The provided sources discuss sub‑second low latency and sub‑100 ms response start times, but they do not specify a measured p95 end‑to‑end latency for Ve",
+  "q25_ambiguous": "I couldn't find information about that in your uploaded documents."
+ }
+}

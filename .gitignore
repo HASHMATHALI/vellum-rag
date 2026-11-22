@@ -1,12 +1,22 @@
 .env
 .env.local
+.env.*.local
 .pytest_cache/
 __pycache__/
 *.pyc
 node_modules/
 dist/
 uploads/
+backend/.test_uploads/
 vector_store/
+app.log*
+.venv/
+.venv-eval/
 .gemini/
 .idea/
 .vscode/
+# local evaluation artefacts that are large or regenerated
+evaluation/reports/phoenix/
+evaluation/reports/evidently_workspace/
+evaluation/reports/runs/*/trulens/trulens.sqlite
+evaluation/reports/runs/smoke/

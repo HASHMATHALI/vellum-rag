@@ -1,132 +1,178 @@
-import os
-import pypdf
-import docx
-import requests
-import tempfile
-from typing import List, Dict
+"""Text extraction for PDF, DOCX, TXT, Markdown and CSV.
+
+Each parser returns a list of blocks: {"text": str, "page_number": int, "section": Optional[str]}.
+Headings are kept as Markdown "#" lines so the chunker can track sections.
+"""
+import csv
+import io
+import logging
+import re
+import unicodedata
+from collections import Counter
+from typing import Dict, List
+
+from app.config.settings import settings
+
+logger = logging.getLogger(__name__)
+Block = Dict[str, object]
+
+
+class ParseError(ValueError):
+    pass
+
+
+def normalize_text(text: str) -> str:
+    text = unicodedata.normalize("NFKC", text).replace("\x00", "")
+    text = re.sub("[-​﻿]", "", text)  # private-use icon glyphs, zero-width chars
+    text = text.replace("\r\n", "\n").replace("\r", "\n")
+    # Join words split across a line break but keep the hyphen ("all-MiniLM-L6-\nv2" must stay "L6-v2").
+    text = re.sub(r"(\w)-\n(\w)", r"\1-\2", text)
+    text = re.sub(r"[ \t]+\n", "\n", text)
+    text = re.sub(r"[ \t]{2,}", " ", text)
+    text = re.sub(r"\n{3,}", "\n\n", text)
+    return text.strip()
+
+
+def _strip_repeated_lines(pages: List[str]) -> List[str]:
+    """Remove running headers/footers: lines (digits ignored) present on more than half of the pages."""
+    if len(pages) < 3:
+        return pages
+    key = lambda line: re.sub(r"\d+", "#", line.strip())
+    counts = Counter()
+    for p in pages:
+        counts.update({key(l) for l in p.split("\n") if l.strip()})
+    repeated = {k for k, c in counts.items() if c > len(pages) / 2 and len(k) > 3}
+    return ["\n".join(l for l in p.split("\n") if key(l) not in repeated) for p in pages]
+
+
+def parse_pdf(data: bytes) -> List[Block]:
+    import pypdf
+    try:
+        reader = pypdf.PdfReader(io.BytesIO(data))
+        if reader.is_encrypted:
+            try:
+                if reader.decrypt("") == 0:
+                    raise ParseError("PDF is password-protected.")
+            except Exception:
+                raise ParseError("PDF is password-protected.")
+        if len(reader.pages) > settings.MAX_PDF_PAGES:
+            raise ParseError(f"PDF has more than {settings.MAX_PDF_PAGES} pages.")
+        raw = []
+        for page in reader.pages:
+            try:
+                raw.append(page.extract_text() or "")
+            except Exception:  # one broken page should not fail the document
+                raw.append("")
+    except ParseError:
+        raise
+    except Exception as e:
+        raise ParseError("The PDF could not be read (corrupted or unsupported).") from e
+    pages = _strip_repeated_lines([normalize_text(t) for t in raw])
+    return [{"text": t, "page_number": i + 1, "section": None} for i, t in enumerate(pages) if t.strip()]
+
+
+def parse_docx(data: bytes) -> List[Block]:
+    import docx
+    from docx.table import Table
+    from docx.text.paragraph import Paragraph
+    try:
+        document = docx.Document(io.BytesIO(data))
+    except Exception as e:
+        raise ParseError("The Word document could not be read (corrupted or unsupported).") from e
+    lines: List[str] = []
+    for child in document.element.body.iterchildren():
+        tag = child.tag.rsplit("}", 1)[-1]
+        if tag == "p":
+            p = Paragraph(child, document)
+            text = p.text.strip()
+            if not text:
+                continue
+            style = (p.style.name or "").lower() if p.style is not None else ""
+            m = re.match(r"heading (\d)", style)
+            if m or style == "title":
+                level = int(m.group(1)) if m else 1
+                lines.append(f"{'#' * min(level, 6)} {text}")
+            else:
+                lines.append(text)
+        elif tag == "tbl":
+            table = Table(child, document)
+            for row in table.rows:
+                cells = [c.text.strip().replace("\n", " ") for c in row.cells]
+                if any(cells):
+                    lines.append(" | ".join(cells))
+            lines.append("")
+    text = normalize_text("\n\n".join(lines))
+    return [{"text": text, "page_number": 1, "section": None, "markdown": True}] if text else []
+
+
+def decode_text(data: bytes) -> str:
+    for enc in ("utf-8-sig", "cp1252"):
+        try:
+            return data.decode(enc)
+        except UnicodeDecodeError:
+            continue
+    return data.decode("latin-1")
+
+
+def parse_text(data: bytes, markdown: bool = False) -> List[Block]:
+    text = normalize_text(decode_text(data))
+    return [{"text": text, "page_number": 1, "section": None, "markdown": markdown}] if text else []
+
+
+def parse_csv(data: bytes, rows_per_block: int = 25, max_rows: int = 100_000) -> List[Block]:
+    text = decode_text(data)
+    try:
+        dialect = csv.Sniffer().sniff(text[:4096], delimiters=",;\t|")
+    except csv.Error:
+        dialect = csv.excel
+    reader = csv.reader(io.StringIO(text), dialect)
+    try:
+        header = [h.strip() for h in next(reader)]
+    except StopIteration:
+        return []
+    blocks, buf, start = [], [], 1
+    for n, row in enumerate(reader, start=1):
+        if n > max_rows:
+            logger.warning("CSV truncated at %d rows", max_rows)
+            break
+        if not any(c.strip() for c in row):
+            continue
+        pairs = [f"{header[i] if i < len(header) and header[i] else f'col{i + 1}'}: {v.strip()}"
+                 for i, v in enumerate(row) if v.strip()]
+        buf.append("; ".join(pairs))
+        if len(buf) >= rows_per_block:
+            blocks.append({"text": normalize_text("\n".join(buf)), "page_number": 1, "section": f"Rows {start}-{n}"})
+            buf, start = [], n + 1
+    if buf:
+        blocks.append({"text": normalize_text("\n".join(buf)), "page_number": 1, "section": f"Rows {start}-{start + len(buf) - 1}"})
+    return blocks
+
+
+def parse(data: bytes, file_type: str) -> List[Block]:
+    file_type = file_type.lower().strip(".")
+    if file_type == "pdf":
+        blocks = parse_pdf(data)
+    elif file_type == "docx":
+        blocks = parse_docx(data)
+    elif file_type in ("md", "markdown"):
+        blocks = parse_text(data, markdown=True)
+    elif file_type == "txt":
+        blocks = parse_text(data)
+    elif file_type == "csv":
+        blocks = parse_csv(data)
+    else:
+        raise ParseError(f"Unsupported file type: .{file_type}")
+    total = sum(len(b["text"]) for b in blocks)
+    if total > settings.MAX_EXTRACTED_CHARS:
+        raise ParseError("Document contains too much text to index.")
+    if total == 0:
+        raise ParseError("No extractable text found (the file may be empty or a scanned image).")
+    return blocks
+
 
 class FileParser:
-    """Service to parse content from different document types and return page-by-page text."""
+    """Backwards-compatible facade used by older call sites."""
 
     @staticmethod
-    def parse_pdf(filepath: str) -> List[Dict[str, any]]:
-        pages = []
-        try:
-            with open(filepath, "rb") as f:
-                reader = pypdf.PdfReader(f)
-                for idx, page in enumerate(reader.pages):
-                    text = page.extract_text()
-                    if text and text.strip():
-                        pages.append({
-                            "text": text.strip(),
-                            "page_number": idx + 1
-                        })
-        except Exception as e:
-            raise ValueError(f"Error parsing PDF file: {e}")
-        return pages
-
-    @staticmethod
-    def parse_docx(filepath: str) -> List[Dict[str, any]]:
-        pages = []
-        try:
-            doc = docx.Document(filepath)
-            full_text = []
-            for paragraph in doc.paragraphs:
-                if paragraph.text.strip():
-                    full_text.append(paragraph.text.strip())
-            
-            # DOCX doesn't have native "pages", so we aggregate text blocks
-            # We treat every ~15 paragraphs or 1500 chars as a "page" block
-            current_block = []
-            char_count = 0
-            page_idx = 1
-            
-            for para in full_text:
-                current_block.append(para)
-                char_count += len(para)
-                if char_count > 1500:
-                    pages.append({
-                        "text": "\n".join(current_block),
-                        "page_number": page_idx
-                    })
-                    current_block = []
-                    char_count = 0
-                    page_idx += 1
-            
-            if current_block:
-                pages.append({
-                    "text": "\n".join(current_block),
-                    "page_number": page_idx
-                })
-        except Exception as e:
-            raise ValueError(f"Error parsing DOCX file: {e}")
-        return pages
-
-    @staticmethod
-    def parse_txt(filepath: str) -> List[Dict[str, any]]:
-        pages = []
-        try:
-            # Try UTF-8 first, fallback to Latin-1
-            content = ""
-            for encoding in ("utf-8", "latin-1", "cp1252"):
-                try:
-                    with open(filepath, "r", encoding=encoding) as f:
-                        content = f.read()
-                    break
-                except UnicodeDecodeError:
-                    continue
-            
-            if not content:
-                raise ValueError("Could not decode file with supported encodings.")
-
-            # Chunk into "pages" by character limits (~2000 chars per page block)
-            chunk_size = 2000
-            for i in range(0, len(content), chunk_size):
-                chunk = content[i:i+chunk_size]
-                if chunk.strip():
-                    pages.append({
-                        "text": chunk.strip(),
-                        "page_number": (i // chunk_size) + 1
-                    })
-        except Exception as e:
-            raise ValueError(f"Error parsing text file: {e}")
-        return pages
-
-    @classmethod
-    def parse(cls, filepath: str, file_type: str) -> List[Dict[str, any]]:
-        """Main routing method for file parsing. Handles local paths and remote URLs."""
-        is_remote = filepath.startswith("http://") or filepath.startswith("https://")
-        
-        target_path = filepath
-        temp_file = None
-        
-        try:
-            if is_remote:
-                suffix = f".{file_type.lower().strip('.')}"
-                temp_file = tempfile.NamedTemporaryFile(delete=False, suffix=suffix)
-                
-                response = requests.get(filepath, timeout=30)
-                response.raise_for_status()
-                temp_file.write(response.content)
-                temp_file.close()
-                target_path = temp_file.name
-                
-            if not os.path.exists(target_path):
-                raise FileNotFoundError(f"File not found: {target_path}")
-                
-            file_type = file_type.lower().strip(".")
-            if file_type == "pdf":
-                return cls.parse_pdf(target_path)
-            elif file_type == "docx":
-                return cls.parse_docx(target_path)
-            elif file_type in ["txt", "md", "markdown"]:
-                return cls.parse_txt(target_path)
-            else:
-                raise ValueError(f"Unsupported file type: .{file_type}")
-                
-        finally:
-            if is_remote and temp_file and os.path.exists(temp_file.name):
-                try:
-                    os.remove(temp_file.name)
-                except Exception:
-                    pass
+    def parse_bytes(data: bytes, file_type: str) -> List[Block]:
+        return parse(data, file_type)

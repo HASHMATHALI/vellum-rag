@@ -1,136 +1,30 @@
-# REST API Specification & Integration Guides
+# REST API
 
-All endpoints require JWT authorization bearer header (except register and login).
+The full endpoint table, request bodies and SSE event format are in the [README](../README.md#api). Interactive OpenAPI docs are served at `/docs` when `ENVIRONMENT` is not `production`.
 
-```text
-Authorization: Bearer <your_jwt_access_token>
+## Authentication
+
+**Browsers.**
+- `POST /api/auth/login` (or `/api/auth/guest`) sets HttpOnly cookies `vellum_access` (30 min, path `/api`) and `vellum_refresh` (7 days, path `/api/auth`), and returns a `csrf_token`.
+- Send it as `X-CSRF-Token` on every POST/PUT/DELETE.
+- Call `POST /api/auth/refresh` on 401.
+
+**API clients.** Use the `access_token` from the login response as `Authorization: Bearer <token>`. CSRF does not apply to Bearer requests.
+
+```bash
+curl -s -X POST https://host/api/auth/login -H 'Content-Type: application/json' \
+     -d '{"email":"user@example.com","password":"<password>"}'
+curl -N https://host/api/query -H "Authorization: Bearer $TOKEN" -H 'Content-Type: application/json' \
+     -d '{"message":"What is the refund policy?","search_mode":"hybrid","k":5}'
 ```
 
----
+If MFA is enabled, login returns `{"mfa_required": true, "mfa_token": "..."}`. Complete it with:
 
-## 1. Authentication Endpoints
+```
+POST /api/auth/login/mfa  {"mfa_token": "...", "code": "123456"}
+```
 
-### POST `/api/auth/register`
-Creates a user account.
-- **Request Body (JSON)**:
-  ```json
-  {
-    "email": "user@example.com",
-    "password": "securepassword123",
-    "full_name": "John Doe"
-  }
-  ```
-- **Response (JSON - 201 Created)**:
-  ```json
-  {
-    "id": 1,
-    "email": "user@example.com",
-    "full_name": "John Doe",
-    "role": "user"
-  }
-  ```
+## Errors
 
-### POST `/api/auth/login`
-Authenticates user and returns JWT access token.
-- **Request Body (JSON)**:
-  ```json
-  {
-    "email": "user@example.com",
-    "password": "securepassword123"
-  }
-  ```
-- **Response (JSON - 200 OK)**:
-  ```json
-  {
-    "access_token": "eyJhbGciOiJIUzI1NiIsIn...",
-    "token_type": "bearer",
-    "user": {
-      "id": 1,
-      "email": "user@example.com",
-      "full_name": "John Doe",
-      "role": "user"
-    }
-  }
-  ```
-
----
-
-## 2. Ingestion Endpoints
-
-### POST `/api/upload`
-Uploads a document.
-- **Request Headers**: `Content-Type: multipart/form-data`
-- **Request Body (Multipart)**:
-  - `file`: Binary file data (PDF, DOCX, TXT, MD)
-- **Response (JSON - 201 Created)**:
-  ```json
-  {
-    "id": 15,
-    "filename": "annual_report.pdf",
-    "file_type": "pdf",
-    "file_size": 1048576,
-    "status": "processing",
-    "total_chunks": 0,
-    "created_at": "2026-07-08T03:10:00Z"
-  }
-  ```
-
-### GET `/api/documents`
-Lists uploaded documents.
-- **Response (JSON - 200 OK)**:
-  ```json
-  [
-    {
-      "id": 15,
-      "filename": "annual_report.pdf",
-      "file_type": "pdf",
-      "file_size": 1048576,
-      "status": "indexed",
-      "total_chunks": 54,
-      "created_at": "2026-07-08T03:10:00Z"
-    }
-  ]
-  ```
-
-### DELETE `/api/document/{id}`
-Deletes a document and its associated vectors.
-- **Response (JSON - 200 OK)**:
-  ```json
-  {
-    "message": "Document deleted and index updated successfully."
-  }
-  ```
-
----
-
-## 3. Conversational QA Endpoints
-
-### POST `/api/query`
-Streams an LLM answer back.
-- **Request Body (JSON)**:
-  ```json
-  {
-    "message": "What was the total revenue in 2025?",
-    "session_id": "optional-uuid-session-string",
-    "search_mode": "hybrid",
-    "k": 5
-  }
-  ```
-- **Response (Server-Sent Events Stream)**:
-  - Event: `session` with session ID details.
-  - Event: `sources` with list of citing document chunks.
-  - Data: JSON objects containing text reply tokens: `{"content": "..."}`.
-  - Event: `close` with token `[DONE]` signifying stream termination.
-
-### GET `/api/history`
-Lists all active chat threads of the logged-in user.
-- **Response (JSON - 200 OK)**:
-  ```json
-  [
-    {
-      "id": "a5e8f810-7212-421f-8181-a3fcf118cd99",
-      "title": "What was the total revenue in 2025?",
-      "created_at": "2026-07-08T03:15:00Z"
-    }
-  ]
-  ```
+- JSON `{"detail": "..."}` with the usual status codes: 400, 401, 403, 404 (also used for resources you don't own), 409 (duplicate upload), 413, 415, 422, 429 (with `Retry-After`) and 503 (health).
+- Server errors return a generic message; details go to the server log only.

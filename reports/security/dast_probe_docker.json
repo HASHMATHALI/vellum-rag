@@ -1,0 +1,142 @@
+{
+ "target": "http://localhost:8080",
+ "passed": 25,
+ "total": 25,
+ "results": [
+  {
+   "check": "security headers present",
+   "pass": true,
+   "evidence": {
+    "content-security-policy": "default-src 'none'; frame-ancestors 'none'; base-uri 'none'; form-action 'none', default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none'",
+    "x-content-type-options": "nosniff, nosniff",
+    "x-frame-options": "DENY, DENY",
+    "referrer-policy": "no-referrer, strict-origin-when-cross-origin",
+    "permissions-policy": "camera=(), microphone=(), geolocation=(), payment=(), camera=(), microphone=(), geolocation=(), payment=()",
+    "server": "nginx"
+   }
+  },
+  {
+   "check": "unauthenticated GET /api/documents denied",
+   "pass": true,
+   "evidence": 401
+  },
+  {
+   "check": "unauthenticated GET /api/history denied",
+   "pass": true,
+   "evidence": 401
+  },
+  {
+   "check": "unauthenticated GET /api/stats denied",
+   "pass": true,
+   "evidence": 401
+  },
+  {
+   "check": "unauthenticated GET /api/logs denied",
+   "pass": true,
+   "evidence": 401
+  },
+  {
+   "check": "unauthenticated GET /api/auth/profile denied",
+   "pass": true,
+   "evidence": 401
+  },
+  {
+   "check": "unauthenticated upload denied",
+   "pass": true,
+   "evidence": 401
+  },
+  {
+   "check": "CORS rejects foreign origin",
+   "pass": true,
+   "evidence": null
+  },
+  {
+   "check": "TRACE method not allowed",
+   "pass": true,
+   "evidence": 405
+  },
+  {
+   "check": "session cookies HttpOnly",
+   "pass": true,
+   "evidence": [
+    "vellum_access",
+    "vellum_refresh"
+   ]
+  },
+  {
+   "check": "CSRF: cookie POST without token rejected",
+   "pass": true,
+   "evidence": 403
+  },
+  {
+   "check": "CSRF: cross-site POST with victim cookies rejected",
+   "pass": true,
+   "evidence": 403
+  },
+  {
+   "check": "path param injection '1 OR 1=1' rejected without reflection or file disclosure",
+   "pass": true,
+   "evidence": 422
+  },
+  {
+   "check": "path param injection '1;DROP TABLE users' rejected without reflection or file disclosure",
+   "pass": true,
+   "evidence": 422
+  },
+  {
+   "check": "path param injection '../../etc/passwd' rejected without reflection or file disclosure",
+   "pass": true,
+   "evidence": 200
+  },
+  {
+   "check": "path param injection '<script>alert(1)</script>' rejected without reflection or file disclosure",
+   "pass": true,
+   "evidence": 404
+  },
+  {
+   "check": "query param injection on /api/logs rejected",
+   "pass": true,
+   "evidence": 403
+  },
+  {
+   "check": "oversized question rejected",
+   "pass": true,
+   "evidence": 422
+  },
+  {
+   "check": "oversized upload rejected (413)",
+   "pass": true,
+   "evidence": 413
+  },
+  {
+   "check": "dangerous file type rejected",
+   "pass": true,
+   "evidence": 415
+  },
+  {
+   "check": "malformed JSON gives clean 422 (no stack trace)",
+   "pass": true,
+   "evidence": 422
+  },
+  {
+   "check": "forged/none-alg token rejected",
+   "pass": true,
+   "evidence": 401
+  },
+  {
+   "check": "forged/none-alg token rejected",
+   "pass": true,
+   "evidence": 401
+  },
+  {
+   "check": "IDOR: other user's document hidden",
+   "pass": true,
+   "evidence": 3
+  },
+  {
+   "check": "IDOR: other user's document not deletable",
+   "pass": true,
+   "evidence": 3
+  }
+ ]
+}

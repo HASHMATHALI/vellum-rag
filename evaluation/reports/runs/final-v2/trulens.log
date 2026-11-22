@@ -1,0 +1,31 @@
+ERROR:  database "rag_eval" already exists
+NOTICE:  extension "vector" already exists, skipping
+Package jsonschema not present in requirements.
+JWT_SECRET_KEY missing or publicly known; generated an ephemeral secret (non-production only).
+ERROR:  database "rag_eval" already exists
+NOTICE:  extension "vector" already exists, skipping
+C:\RAG\evaluation\trulens_evaluation.py:78: DeprecationWarning: Feedback is deprecated and will be removed in a future version. Use Metric instead:
+  from trulens.core import Metric
+  metric = Metric(implementation=fn).on_input_output()
+  f_context = (Feedback(provider.context_relevance_with_cot_reasons, name="Context Relevance")
+C:\RAG\evaluation\trulens_evaluation.py:81: DeprecationWarning: Feedback is deprecated and will be removed in a future version. Use Metric instead:
+  from trulens.core import Metric
+  metric = Metric(implementation=fn).on_input_output()
+  f_ground = (Feedback(provider.groundedness_measure_with_cot_reasons, name="Groundedness")
+C:\RAG\evaluation\trulens_evaluation.py:83: DeprecationWarning: Feedback is deprecated and will be removed in a future version. Use Metric instead:
+  from trulens.core import Metric
+  metric = Metric(implementation=fn).on_input_output()
+  f_answer = (Feedback(provider.relevance_with_cot_reasons, name="Answer Relevance")
+Loading weights:   0%|          | 0/103 [00:00<?, ?it/s]Loading weights: 100%|██████████| 103/103 [00:00<00:00, 17076.30it/s]
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+Loading weights:   0%|          | 0/105 [00:00<?, ?it/s]Loading weights: 100%|██████████| 105/105 [00:00<00:00, 40575.08it/s]
+LLM call failed (model=openai/gpt-oss-120b, RateLimitError, status=429)
+OpenAIEndpoint request failed <class 'openai.RateLimitError'>=Error code: 429 - Rate limit reached for model `openai/gpt-oss-120b` in organization `org_01knkzm1mxexmam65tqk1zebsb` service tier `on_demand` on tokens per day (TPD): Limit 200000, Used 199819, Requested 1459. Please try again in 9m12.096s. Need more tokens? Upgrade to Dev Tier today at https://console.groq.com/settings/billing. Retries remaining=3.
+OpenAIEndpoint request failed <class 'openai.RateLimitError'>=Error code: 429 - Rate limit reached for model `openai/gpt-oss-120b` in organization `org_01knkzm1mxexmam65tqk1zebsb` service tier `on_demand` on tokens per day (TPD): Limit 200000, Used 199819, Requested 1270. Please try again in 7m50.448s. Need more tokens? Upgrade to Dev Tier today at https://console.groq.com/settings/billing. Retries remaining=3.
+OpenAIEndpoint request failed <class 'openai.RateLimitError'>=Error code: 429 - Rate limit reached for model `openai/gpt-oss-120b` in organization `org_01knkzm1mxexmam65tqk1zebsb` service tier `on_demand` on tokens per day (TPD): Limit 200000, Used 199819, Requested 1347. Please try again in 8m23.712s. Need more tokens? Upgrade to Dev Tier today at https://console.groq.com/settings/billing. Retries remaining=3.
+OpenAIEndpoint request failed <class 'openai.RateLimitError'>=Error code: 429 - Rate limit reached for model `openai/gpt-oss-120b` in organization `org_01knkzm1mxexmam65tqk1zebsb` service tier `on_demand` on tokens per day (TPD): Limit 200000, Used 199814, Requested 1406. Please try again in 8m47.04s. Need more tokens? Upgrade to Dev Tier today at https://console.groq.com/settings/billing. Retries remaining=2.
+OpenAIEndpoint request failed <class 'openai.RateLimitError'>=Error code: 429 - Rate limit reached for model `openai/gpt-oss-120b` in organization `org_01knkzm1mxexmam65tqk1zebsb` service tier `on_demand` on tokens per day (TPD): Limit 200000, Used 199814, Requested 1270. Please try again in 7m48.288s. Need more tokens? Upgrade to Dev Tier today at https://console.groq.com/settings/billing. Retries remaining=2.
+OpenAIEndpoint request failed <class 'openai.RateLimitError'>=Error code: 429 - Rate limit reached for model `openai/gpt-oss-120b` in organization `org_01knkzm1mxexmam65tqk1zebsb` service tier `on_demand` on tokens per day (TPD): Limit 200000, Used 199814, Requested 1387. Please try again in 8m38.832s. Need more tokens? Upgrade to Dev Tier today at https://console.groq.com/settings/billing. Retries remaining=2.
+OpenAIEndpoint request failed <class 'openai.RateLimitError'>=Error code: 429 - Rate limit reached for model `openai/gpt-oss-120b` in organization `org_01knkzm1mxexmam65tqk1zebsb` service tier `on_demand` on tokens per day (TPD): Limit 200000, Used 199804, Requested 1446. Please try again in 9m0s. Need more tokens? Upgrade to Dev Tier today at https://console.groq.com/settings/billing. Retries remaining=1.
+OpenAIEndpoint request failed <class 'openai.RateLimitError'>=Error code: 429 - Rate limit reached for model `openai/gpt-oss-120b` in organization `org_01knkzm1mxexmam65tqk1zebsb` service tier `on_demand` on tokens per day (TPD): Limit 200000, Used 199804, Requested 1230. Please try again in 7m26.688s. Need more tokens? Upgrade to Dev Tier today at https://console.groq.com/settings/billing. Retries remaining=1.
+OpenAIEndpoint request failed <class 'openai.RateLimitError'>=Error code: 429 - Rate limit reached for model `openai/gpt-oss-120b` in organization `org_01knkzm1mxexmam65tqk1zebsb` service tier `on_demand` on tokens per day (TPD): Limit 200000, Used 199804, Requested 1347. Please try again in 8m17.232s. Need more tokens? Upgrade to Dev Tier today at https://console.groq.com/settings/billing. Retries remaining=1.

@@ -1,188 +1,255 @@
+"""Retrieval engine: semantic (pgvector HNSW), hybrid (vector + Postgres full-text, fused with RRF) and MMR,
+followed by optional cross-encoder reranking and a relevance threshold.
+
+Authorisation is part of the query itself: every SQL statement is restricted to chunks whose owner is
+`user_id` and whose document is fully indexed. The caller cannot omit the filter.
+"""
 import logging
-from typing import List, Dict, Tuple
+import re
+import time
+from dataclasses import dataclass, field
+from typing import Dict, List, Optional
+
 import numpy as np
+from sqlalchemy import func, literal_column, select, text
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.future import select
-from sqlalchemy import or_
+
+from app.config.settings import settings
 from app.embeddings.embedder import embedder
-from app.models.document import DocumentChunk
+from app.models.document import Document, DocumentChunk
+from app.retrieval.reranker import reranker
 
 logger = logging.getLogger(__name__)
+RRF_K = 60
+_TOKEN = re.compile(r"[A-Za-z0-9]{2,}")
+
+
+@dataclass
+class RetrievedChunk:
+    chunk_id: int
+    document_id: int
+    filename: str
+    chunk_index: int
+    page_number: int
+    section: Optional[str]
+    text: str
+    score: float  # final ranking score (rerank logit, RRF or cosine)
+    vector_score: Optional[float] = None
+    keyword_score: Optional[float] = None
+    rerank_score: Optional[float] = None
+    injection_score: Optional[float] = None
+    embedding: Optional[np.ndarray] = field(default=None, repr=False)
+
+    def as_source(self, ref: int) -> dict:
+        return {
+            "ref": ref, "document_id": self.document_id, "filename": self.filename, "chunk_index": self.chunk_index,
+            "page_number": self.page_number, "section": self.section, "similarity_score": round(float(self.score), 4),
+            "text_content": self.text,
+        }
+
+
+@dataclass
+class RetrievalStats:
+    candidates: int = 0
+    after_threshold: int = 0
+    embed_ms: float = 0.0
+    search_ms: float = 0.0
+    rerank_ms: float = 0.0
+
+
+_pgvector_iterative: Optional[bool] = None
+
+
+async def _use_hnsw(db: AsyncSession) -> bool:
+    """Decide between exact per-tenant search and the HNSW index.
+
+    With a per-user filter, a plain HNSW scan post-filters the index's candidate list and can silently return fewer
+    than k rows for a small tenant (measured in PERFORMANCE_REPORT.md on pgvector 0.6). pgvector >= 0.8 fixes this
+    with iterative index scans. Default VECTOR_SEARCH=exact gives recall 1.0 on any version and is fast for
+    per-user corpus sizes; VECTOR_SEARCH=hnsw is used only when iterative scans are available.
+    """
+    global _pgvector_iterative
+    if settings.VECTOR_SEARCH != "hnsw":
+        return False
+    if _pgvector_iterative is None:
+        ver = (await db.execute(text("SELECT extversion FROM pg_extension WHERE extname = 'vector'"))).scalar() or "0"
+        major, minor = (int(x) for x in (ver.split(".") + ["0"])[:2])
+        _pgvector_iterative = (major, minor) >= (0, 8)
+        if not _pgvector_iterative:
+            logger.warning("VECTOR_SEARCH=hnsw needs pgvector >= 0.8 (found %s); using exact per-tenant search.", ver)
+    if not _pgvector_iterative:
+        return False
+    await db.execute(text("SET LOCAL hnsw.ef_search = 100"))
+    await db.execute(text("SET LOCAL hnsw.iterative_scan = 'relaxed_order'"))
+    return True
+
+
+def _owned_chunks(user_id: int, document_ids: Optional[List[int]]):
+    stmt = (
+        select(DocumentChunk, Document.filename)
+        .join(Document, Document.id == DocumentChunk.document_id)
+        .where(DocumentChunk.user_id == user_id, Document.user_id == user_id, Document.status == "indexed")
+    )
+    if document_ids is not None:
+        stmt = stmt.where(DocumentChunk.document_id.in_(document_ids))
+    return stmt
+
+
+def _to_result(chunk: DocumentChunk, filename: str, score: float) -> RetrievedChunk:
+    return RetrievedChunk(
+        chunk_id=chunk.id, document_id=chunk.document_id, filename=filename, chunk_index=chunk.chunk_index,
+        page_number=chunk.page_number, section=chunk.section, text=chunk.text_content, score=score,
+        injection_score=chunk.injection_score,
+        embedding=np.asarray(chunk.embedding, dtype=np.float32) if chunk.embedding is not None else None,
+    )
+
+
+def or_tsquery(query: str) -> str:
+    """Build an OR tsquery from alphanumeric tokens only, so user input can never break tsquery syntax."""
+    tokens = list(dict.fromkeys(t.lower() for t in _TOKEN.findall(query)))[:32]
+    return " | ".join(tokens)
+
 
 class Retriever:
-    """Advanced Retrieval Engine supporting Semantic Search, MMR, and Hybrid Search using database pgvector."""
+    @classmethod
+    async def vector_candidates(cls, db, query_vec, user_id, document_ids, n) -> List[RetrievedChunk]:
+        dist = DocumentChunk.embedding.cosine_distance(query_vec)
+        # Ordering by `dist + 0` (an expression, not the bare operator) keeps the planner off the HNSW index, so the
+        # search is exact over the tenant's rows (found through the user_id index).
+        order = dist if await _use_hnsw(db) else dist + 0
+        stmt = _owned_chunks(user_id, document_ids).add_columns((1 - dist).label("sim")) \
+            .where(DocumentChunk.embedding.isnot(None)).order_by(order).limit(n)
+        rows = (await db.execute(stmt)).all()
+        out = []
+        for chunk, filename, sim in rows:
+            r = _to_result(chunk, filename, float(sim))
+            r.vector_score = float(sim)
+            out.append(r)
+        return out
 
     @classmethod
-    async def semantic_search(
-        cls, 
-        db: AsyncSession, 
-        query: str, 
-        k: int = 5, 
-        document_ids: List[int] = None
-    ) -> List[Tuple[DocumentChunk, float]]:
-        """Standard Semantic search using pgvector Cosine Similarity."""
-        if document_ids is not None and not document_ids:
+    async def keyword_candidates(cls, db, query, user_id, document_ids, n) -> List[RetrievedChunk]:
+        tsq = or_tsquery(query)
+        if not tsq:
             return []
-            
-        query_vector = embedder.get_embedding(query)
-        query_list = query_vector.tolist() if hasattr(query_vector, "tolist") else list(query_vector)
+        q = func.to_tsquery("english", tsq)
+        # Generated, GIN-indexed column created by database/migrations.py (not mapped on the ORM model).
+        tsv_expr = literal_column("document_chunks.tsv")
+        rank = func.ts_rank_cd(tsv_expr, q)
+        stmt = _owned_chunks(user_id, document_ids).add_columns(rank.label("rank")) \
+            .where(tsv_expr.op("@@")(q)).order_by(rank.desc()).limit(n)
+        rows = (await db.execute(stmt)).all()
+        out = []
+        for chunk, filename, rk in rows:
+            r = _to_result(chunk, filename, float(rk))
+            r.keyword_score = float(rk)
+            out.append(r)
+        return out
 
-        # 1 - Cosine Distance is Cosine Similarity
-        cosine_distance_expr = DocumentChunk.embedding.cosine_distance(query_list)
-        stmt = select(DocumentChunk, (1 - cosine_distance_expr).label("similarity"))
-        
-        if document_ids is not None:
-            stmt = stmt.where(DocumentChunk.document_id.in_(document_ids))
-            
-        stmt = stmt.order_by(cosine_distance_expr.asc()).limit(k)
-        
-        res = await db.execute(stmt)
-        raw_results = res.all()
-        
-        return [(row[0], float(row[1])) for row in raw_results]
+    @staticmethod
+    def rrf(lists: List[List[RetrievedChunk]]) -> List[RetrievedChunk]:
+        fused: Dict[int, RetrievedChunk] = {}
+        scores: Dict[int, float] = {}
+        for lst in lists:
+            for rank, r in enumerate(lst):
+                if r.chunk_id in fused:
+                    existing = fused[r.chunk_id]
+                    existing.vector_score = existing.vector_score if existing.vector_score is not None else r.vector_score
+                    existing.keyword_score = existing.keyword_score if existing.keyword_score is not None else r.keyword_score
+                else:
+                    fused[r.chunk_id] = r
+                scores[r.chunk_id] = scores.get(r.chunk_id, 0.0) + 1.0 / (RRF_K + rank + 1)
+        ordered = sorted(fused.values(), key=lambda r: scores[r.chunk_id], reverse=True)
+        for r in ordered:
+            r.score = scores[r.chunk_id]
+        return ordered
+
+    @staticmethod
+    def mmr(results: List[RetrievedChunk], k: int, lambda_val: float = 0.6) -> List[RetrievedChunk]:
+        if len(results) <= 1:
+            return results[:k]
+        rel = np.array([r.score for r in results], dtype=np.float32)
+        rel = (rel - rel.min()) / (rel.max() - rel.min() + 1e-9)
+        vecs = [r.embedding for r in results]
+        selected = [0]
+        while len(selected) < min(k, len(results)):
+            best, best_val = -1, -1e9
+            for i in range(len(results)):
+                if i in selected:
+                    continue
+                if vecs[i] is None:
+                    redundancy = 0.0
+                else:
+                    redundancy = max(float(np.dot(vecs[i], vecs[j])) for j in selected if vecs[j] is not None) \
+                        if any(vecs[j] is not None for j in selected) else 0.0
+                val = lambda_val * rel[i] - (1 - lambda_val) * redundancy
+                if val > best_val:
+                    best, best_val = i, val
+            selected.append(best)
+        return [results[i] for i in selected]
 
     @classmethod
-    async def mmr_search(
-        cls, 
-        db: AsyncSession, 
-        query: str, 
-        k: int = 5, 
-        document_ids: List[int] = None, 
-        lambda_val: float = 0.5
-    ) -> List[Tuple[DocumentChunk, float]]:
-        """Maximal Marginal Relevance search using database pgvector to balance relevance and diversity."""
+    async def search(
+        cls,
+        db: AsyncSession,
+        query: str,
+        user_id: int,
+        mode: str = "hybrid",
+        k: int = 5,
+        document_ids: Optional[List[int]] = None,
+        apply_threshold: bool = True,
+        use_reranker: Optional[bool] = None,
+        stats: Optional[RetrievalStats] = None,
+    ) -> List[RetrievedChunk]:
+        if user_id is None:
+            raise ValueError("user_id is required for retrieval (authorisation filter)")
         if document_ids is not None and not document_ids:
             return []
+        stats = stats or RetrievalStats()
+        use_reranker = settings.RERANKER_ENABLED if use_reranker is None else use_reranker
+        mode = (mode or "hybrid").lower()
+        n = max(settings.RETRIEVAL_CANDIDATES, k * 3)
 
-        query_vector = embedder.get_embedding(query)
-        query_list = query_vector.tolist() if hasattr(query_vector, "tolist") else list(query_vector)
-        candidate_k = k * 3
+        t0 = time.perf_counter()
+        qvec = (await embedder.aembed_query(query)).tolist()
+        stats.embed_ms = (time.perf_counter() - t0) * 1000
 
-        cosine_distance_expr = DocumentChunk.embedding.cosine_distance(query_list)
-        stmt = select(DocumentChunk, (1 - cosine_distance_expr).label("similarity"))
-        
-        if document_ids is not None:
-            stmt = stmt.where(DocumentChunk.document_id.in_(document_ids))
-            
-        stmt = stmt.order_by(cosine_distance_expr.asc()).limit(candidate_k)
-        
-        res = await db.execute(stmt)
-        raw_results = res.all()
-        
-        if not raw_results:
-            return []
-            
-        candidates = []
-        candidate_vectors = []
-        
-        for chunk, score in raw_results:
-            if chunk.embedding is not None:
-                vec = np.array(chunk.embedding, dtype=np.float32)
-                norm = np.linalg.norm(vec)
-                if norm > 0:
-                    vec = vec / norm
-                candidates.append((chunk, float(score)))
-                candidate_vectors.append(vec)
-                
+        t0 = time.perf_counter()
+        vec = await cls.vector_candidates(db, qvec, user_id, document_ids, n)
+        if mode == "hybrid":
+            kw = await cls.keyword_candidates(db, query, user_id, document_ids, n)
+            candidates = cls.rrf([vec, kw])
+        else:
+            candidates = vec
+        stats.search_ms = (time.perf_counter() - t0) * 1000
+        stats.candidates = len(candidates)
         if not candidates:
             return []
-            
-        # Select first item (highest semantic similarity)
-        selected_indices = [0]
-        
-        while len(selected_indices) < min(k, len(candidates)):
-            best_mmr = -float('inf')
-            best_idx = -1
-            
-            for i in range(len(candidates)):
-                if i in selected_indices:
-                    continue
-                    
-                sim_to_query = candidates[i][1]
-                
-                max_sim_to_selected = -float('inf')
-                for sel_idx in selected_indices:
-                    sim_to_sel = np.dot(candidate_vectors[i], candidate_vectors[sel_idx])
-                    if sim_to_sel > max_sim_to_selected:
-                        max_sim_to_selected = sim_to_sel
-                        
-                mmr_score = lambda_val * sim_to_query - (1 - lambda_val) * max_sim_to_selected
-                
-                if mmr_score > best_mmr:
-                    best_mmr = mmr_score
-                    best_idx = i
-                    
-            if best_idx == -1:
-                break
-            selected_indices.append(best_idx)
-            
-        return [candidates[idx] for idx in selected_indices]
 
+        if use_reranker:
+            t0 = time.perf_counter()
+            candidates = candidates[:settings.RERANK_TOP_N]
+            passages = [f"{c.section}\n{c.text}" if c.section else c.text for c in candidates]
+            scores = await reranker.ascore(query, passages)
+            for c, s in zip(candidates, scores):
+                c.rerank_score = s
+                c.score = s
+            candidates.sort(key=lambda c: c.score, reverse=True)
+            stats.rerank_ms = (time.perf_counter() - t0) * 1000
+            if apply_threshold and candidates:
+                floor = max(settings.RERANK_MIN_SCORE, candidates[0].score - settings.RERANK_RELATIVE_MARGIN)
+                candidates = [c for c in candidates if c.score >= floor]
+        elif apply_threshold:
+            candidates = [c for c in candidates if (c.vector_score or 0.0) >= settings.SEMANTIC_MIN_SCORE
+                          or (mode == "hybrid" and c.keyword_score)]
+        stats.after_threshold = len(candidates)
+
+        if mode == "mmr":
+            return cls.mmr(candidates, k)
+        return candidates[:k]
+
+    # --- Backwards-compatible wrappers (old call sites/tests) ---
     @classmethod
-    async def hybrid_search(
-        cls, 
-        db: AsyncSession, 
-        query: str, 
-        k: int = 5, 
-        document_ids: List[int] = None, 
-        semantic_weight: float = 0.7
-    ) -> List[Tuple[DocumentChunk, float]]:
-        """Combines pgvector Semantic Search and database-backed keyword matching."""
-        if document_ids is not None and not document_ids:
-            return []
-
-        # 1. Semantic Candidates
-        semantic_results = await cls.semantic_search(db, query, k=k*2, document_ids=document_ids)
-        
-        # 2. Keyword Search Candidates using database SQL filtering (ILIKE)
-        terms = [t.strip() for t in query.split() if len(t.strip()) > 2]
-        keyword_results = []
-        if terms:
-            conditions = [DocumentChunk.text_content.ilike(f"%{term}%") for term in terms]
-            sql_stmt = select(DocumentChunk)
-            if document_ids:
-                sql_stmt = sql_stmt.where(DocumentChunk.document_id.in_(document_ids))
-            
-            sql_stmt = sql_stmt.where(or_(*conditions)).limit(k * 2)
-            res = await db.execute(sql_stmt)
-            keyword_chunks = res.scalars().all()
-            
-            scored_keyword_chunks = []
-            for chunk in keyword_chunks:
-                match_count = sum(1 for term in terms if term.lower() in chunk.text_content.lower())
-                score = match_count / len(terms)
-                scored_keyword_chunks.append((chunk, score))
-            
-            scored_keyword_chunks.sort(key=lambda x: x[1], reverse=True)
-            keyword_results = scored_keyword_chunks
-
-        # 3. Reciprocal Rank Fusion / Weighted Score Combination
-        combined_scores: Dict[int, Tuple[DocumentChunk, float]] = {}
-        
-        sem_max = max([score for _, score in semantic_results]) if semantic_results else 1.0
-        sem_min = min([score for _, score in semantic_results]) if semantic_results else 0.0
-        sem_range = sem_max - sem_min if sem_max != sem_min else 1.0
-        
-        for rank, (chunk, score) in enumerate(semantic_results):
-            norm_score = (score - sem_min) / sem_range
-            combined_scores[chunk.id] = (chunk, norm_score * semantic_weight)
-            
-        kw_weight = 1.0 - semantic_weight
-        kw_max = max([score for _, score in keyword_results]) if keyword_results else 1.0
-        kw_min = min([score for _, score in keyword_results]) if keyword_results else 0.0
-        kw_range = kw_max - kw_min if kw_max != kw_min else 1.0
-        
-        for rank, (chunk, score) in enumerate(keyword_results):
-            norm_score = (score - kw_min) / kw_range
-            added_score = norm_score * kw_weight
-            
-            if chunk.id in combined_scores:
-                current_chunk, current_score = combined_scores[chunk.id]
-                combined_scores[chunk.id] = (current_chunk, current_score + added_score)
-            else:
-                combined_scores[chunk.id] = (chunk, added_score)
-                
-        sorted_results = list(combined_scores.values())
-        sorted_results.sort(key=lambda x: x[1], reverse=True)
-        
-        return sorted_results[:k]
+    async def semantic_search(cls, db, query, k=5, document_ids=None, user_id=None):
+        return await cls.search(db, query, user_id=user_id, mode="semantic", k=k, document_ids=document_ids,
+                                apply_threshold=False, use_reranker=False)

@@ -4,7 +4,7 @@ import { Button } from '../components/ui/Button';
 import { Settings, Sliders, ToggleLeft } from 'lucide-react';
 
 export const SettingsPage: React.FC = () => {
-  const [searchMode, setSearchMode] = useState<string>(() => localStorage.getItem('searchMode') || 'semantic');
+  const [searchMode, setSearchMode] = useState<string>(() => localStorage.getItem('searchMode') || 'hybrid');
   const [k, setK] = useState<number>(() => parseInt(localStorage.getItem('k') || '5'));
   const [lambda, setLambda] = useState<number>(() => parseFloat(localStorage.getItem('lambda') || '0.5'));
   const [semanticWeight, setSemanticWeight] = useState<number>(() => parseFloat(localStorage.getItem('semanticWeight') || '0.7'));
@@ -85,7 +85,7 @@ export const SettingsPage: React.FC = () => {
             <input 
               type="range" 
               min="1" 
-              max="15" 
+              max="10" 
               value={k} 
               onChange={(e) => setK(parseInt(e.target.value))}
               className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-dark-border accent-brand-500"

@@ -1,0 +1,61 @@
+{
+ "framework": "trulens",
+ "version": "2.16.0",
+ "judge_model": "openai/gpt-oss-120b",
+ "app": "VellumRAG/v2-hybrid-rerank",
+ "seconds": 115.3,
+ "sqlite": "evaluation\\reports\\runs\\smoke\\trulens\\trulens.sqlite",
+ "summary": {
+  "context_relevance": {
+   "mean": 0.7333,
+   "n": 2,
+   "threshold": 0.6,
+   "pass": true
+  },
+  "groundedness": {
+   "mean": 1.0,
+   "n": 2,
+   "threshold": 0.8,
+   "pass": true
+  },
+  "answer_relevance": {
+   "mean": 0.8334,
+   "n": 2,
+   "threshold": 0.7,
+   "pass": true
+  }
+ },
+ "leaderboard": [
+  {
+   "app_name": "VellumRAG",
+   "app_version": "v2-hybrid-rerank",
+   "Answer Relevance": 0.8333333333,
+   "Context Relevance": 0.7333333333,
+   "Groundedness": 1.0,
+   "latency": 11.3041465,
+   "total_cost": 0.0
+  }
+ ],
+ "per_record": [
+  {
+   "id": "q01",
+   "category": "answerable",
+   "input": "Which embedding model does Vellum RAG use and what is the dimension of its vectors?",
+   "output": "I couldn't find information about that in your uploaded documents. The documents mention using \u201clocal MiniLM embeddings\u201d[5]but do not specify the model name or the dimensionality of the vectors.",
+   "Context Relevance": 0.4667,
+   "Groundedness": 1.0,
+   "Answer Relevance": 0.6667,
+   "latency_s": 21.211262
+  },
+  {
+   "id": "q02",
+   "category": "answerable",
+   "input": "What are the default chunk size and chunk overlap used by the TextChunker?",
+   "output": "- **Default chunk size:** 1500 characters[1]  \n- **Chunk overlap:** 200 characters[1][2]",
+   "Context Relevance": 1.0,
+   "Groundedness": 1.0,
+   "Answer Relevance": 1.0,
+   "latency_s": 1.397031
+  }
+ ]
+}

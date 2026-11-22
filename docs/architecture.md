@@ -1,36 +1,43 @@
 # Platform Architecture & Core Pipelines
 
-This document outlines the software engineering architecture of the RAG platform.
-
 ```mermaid
 graph TD
-    User([User UI / Client]) -->|Web / API Requests| Gateway[Nginx Gateway]
-    Gateway -->|/api/*| Backend[FastAPI Backend]
+    User([Browser / API client]) -->|HTTPS, HttpOnly cookie + CSRF or Bearer| Gateway[nginx gateway]
+    Gateway -->|/api/*| Backend[FastAPI backend]
     Gateway -->|/*| Frontend[React SPA]
-    
-    Backend -->|JWT Auth & Metadata| DB[(PostgreSQL)]
-    Backend -->|Request Count Check| RedisCache[(Redis Cache)]
-    
-    Backend -->|Local Inference| Embedder[all-MiniLM-L6-v2]
-    Backend -->|Similarity Search| FAISS[(FAISS Index)]
-    
-    Backend -->|Streaming Prompt| Groq[Groq Llama-3.3]
+    Backend --> DB[(PostgreSQL + pgvector + full-text)]
+    Backend --> Redis[(Redis: rate limits)]
+    Backend --> Storage[(Private Supabase bucket / local volume)]
+    Backend -->|local CPU| Models[MiniLM embedder + cross-encoder reranker]
+    Backend -->|streaming| Groq[Groq LLM + fallback model]
+    Backend -.->|OTLP spans| Phoenix[Arize Phoenix]
 ```
 
-## 1. Document Processing Ingestion Pipeline
-When a user uploads a document (PDF, DOCX, TXT, MD):
-1. **Physical Write**: The file is stored inside `/app/uploads` under unique generated file names.
-2. **Text Parsing**: `FileParser` extracts page-by-page string characters based on file extension.
-3. **Overlapping Chunker**: `TextChunker` segments text into sliding chunks of 500 characters with 50 characters overlap to ensure contextual boundaries are not severed.
-4. **Relational Sync**: Chunks are inserted into PostgreSQL database under the `document_chunks` table, securing incrementing primary keys (`chunk.id`).
-5. **Local Vector Embeddings**: `Embedder` (Sentence Transformers `all-MiniLM-L6-v2`) converts text chunks into a series of 384-dimension floating point arrays.
-6. **Vector Index Sync**: The generated arrays are added to the FAISS `IndexIDMap` linked directly to their Postgres `chunk.id` label, and the binary index is written to disk at `/app/vector_store/faiss_index.bin`.
+## 1. Ingestion (`services/document_service.py`, `ingestion/`)
+1. **Validation** (`ingestion/validation.py`): size cap (413), extension allow-list, MIME sanity check, magic bytes, DOCX zip-bomb/macro checks, filename sanitised (display only), SHA-256 dedupe per user (409).
+2. **Storage** (`ingestion/storage.py`): random UUID object name in a private bucket or local volume. The app never fetches arbitrary URLs.
+3. **Background indexing** (threadpool, so the event loop stays responsive):
+   - parse (`ingestion/parser.py`): PDF pages without running headers, DOCX headings and tables, TXT/MD, CSV records
+   - recursive section-aware chunking (`ingestion/chunker.py`, 1000/150)
+   - embedding (normalised, batched)
+   - insert chunks with owner id, section and prompt-injection heuristic score
+   - mark the document `indexed`, or `failed` with an `error_message`
 
-## 2. Conversational RAG Completions Pipeline
-When a user sends a query inside a chat session:
-1. **Query Reformulation**: The backend fetches the last few messages of history. If history exists, it queries the Groq API to rewrite the follow-up prompt into a standalone vector search query.
-2. **Dense Vector Search**: The standalone query is embedded using `all-MiniLM-L6-v2` and searched in the FAISS index to retrieve the top `k` matching chunk IDs.
-3. **Database Context Gathering**: The backend fetches the full textual contents of those matching chunk IDs from PostgreSQL.
-4. **Context Construction**: Chunks are compiled into the `SYSTEM_RAG_PROMPT` along with page numbers and document names.
-5. **SSE Stream completions**: Groq API is called asynchronously, and the response is streamed chunk-by-chunk using Server-Sent Events (SSE).
-6. **Persistence logging**: The complete aggregated assistant response and list of citations are committed to the PostgreSQL `chat_messages` table at the end of the stream.
+## 2. Question answering (`rag/pipeline.py`, used by the API and the evaluation suite)
+1. Validate the question. Ownership of the session and document ids is checked **before** streaming starts.
+2. Reformulate follow-ups into a standalone query (utility LLM, last 6 messages).
+3. Retrieval (`retrieval/retriever.py`): exact vector search over the caller's indexed chunks, plus Postgres full-text search, fused with RRF. A cross-encoder reranks the top 10. Chunks are dropped below an absolute floor or a margin from the best chunk.
+4. **No relevant chunks → fixed refusal, no LLM call.**
+5. Context (`rag/context.py`): dedupe, token budget, numbered `<source>` blocks, delimiter escaping, injection warnings.
+6. Generation (`llm/groq_client.py`): rules-only system prompt, sources in a separate message as untrusted data. Retries, timeout, fallback model.
+7. Citation validation: invalid `[n]` stripped. `meta` event carries timings, token usage and grounding flags. The answer and sources are persisted.
+
+## 3. Security model
+See [SECURITY_AUDIT.md](../SECURITY_AUDIT.md). In short:
+- Every data query is filtered by owner; optional Postgres RLS enforces the same rule in the database.
+- Server-side sessions (revocable), HttpOnly cookies + CSRF, Argon2id, TOTP MFA.
+- Rate limits per IP, account and user.
+
+## 4. Observability
+- Structured logs with secret redaction.
+- OpenTelemetry spans with OpenInference attributes, sent to Phoenix: `rag.query` → `rag.reformulate` → `rag.retrieve` → `rag.generate`, plus `ingest.document` / `ingest.embed`. Content attributes are exported only with `TRACE_INCLUDE_CONTENT=true`.

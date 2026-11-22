@@ -1,0 +1,17 @@
+# Evaluation environment (separate from the backend image). Exact resolved set: requirements-eval.lock.txt
+#   uv venv .venv-eval --python 3.12
+#   uv pip install --python .venv-eval torch --index-url https://download.pytorch.org/whl/cpu
+#   uv pip install --python .venv-eval -r backend/requirements-dev.txt -r evaluation/requirements-eval.txt
+#   uv pip install --python .venv-eval "openai>=2.45,<4"   # see note on trulens-providers-openai below
+ragas==0.4.4
+deepeval==4.3.4
+evidently==0.7.23
+pandas<3                      # evidently 0.7 imports pandas internals removed in pandas 3
+trulens==2.16.0
+trulens-providers-openai==2.16.0   # declares openai<2 but works with openai 3.x (verified); litellm/instructor need openai>=2
+arize-phoenix==20.19.0
+arize-phoenix-otel==0.17.3
+openinference-instrumentation
+langchain-huggingface
+# Known resolver conflicts (verified harmless for our usage): trulens-dashboard wants plotly>=6 (evidently pins 5);
+# instructor declares jiter<0.15.

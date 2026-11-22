@@ -1,82 +1,50 @@
-import os
 import datetime
-from sqlalchemy import func
+import os
+from collections import deque
+
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.future import select
-from app.models.user import User
-from app.models.document import Document
+
+from app.config.logging_config import redact
+from app.config.settings import settings
 from app.models.chat import ChatMessage
+from app.models.document import Document, DocumentChunk
+from app.models.user import User, utcnow
+
 
 class AdminService:
-    """Aggregates system-wide analytics, document quotas, API limits, and logs."""
-
     @staticmethod
     async def get_system_stats(db: AsyncSession) -> dict:
-        # 1. Total Users
-        users_count_res = await db.execute(select(func.count(User.id)))
-        total_users = users_count_res.scalar() or 0
-        
-        # 2. Total Documents
-        docs_count_res = await db.execute(select(func.count(Document.id)))
-        total_docs = docs_count_res.scalar() or 0
-        
-        # 3. Storage Used (in bytes)
-        storage_res = await db.execute(select(func.sum(Document.file_size)))
-        total_storage_bytes = storage_res.scalar() or 0
-        total_storage_mb = round(total_storage_bytes / (1024 * 1024), 2)
-        
-        # 4. Queries Today (last 24 hours)
-        last_24h = datetime.datetime.utcnow() - datetime.timedelta(hours=24)
-        queries_res = await db.execute(
-            select(func.count(ChatMessage.id))
-            .where(ChatMessage.role == "user", ChatMessage.created_at >= last_24h)
-        )
-        queries_today = queries_res.scalar() or 0
-        
-        # 5. Most Asked Questions (recent search prompts)
-        recent_queries_res = await db.execute(
-            select(ChatMessage.content)
-            .where(ChatMessage.role == "user")
-            .order_by(ChatMessage.created_at.desc())
-            .limit(5)
-        )
-        recent_queries = list(recent_queries_res.scalars().all())
-        
-        # 6. Mock API usage metric
-        api_usage = {
-            "auth_requests": 140,
-            "indexing_jobs": total_docs,
-            "llm_tokens_estimated": queries_today * 350
-        }
-        
+        total_users = (await db.execute(select(func.count(User.id)).where(User.role != "guest"))).scalar() or 0
+        guests = (await db.execute(select(func.count(User.id)).where(User.role == "guest"))).scalar() or 0
+        total_docs = (await db.execute(select(func.count(Document.id)))).scalar() or 0
+        storage_bytes = (await db.execute(select(func.sum(Document.file_size)))).scalar() or 0
+        chunks = (await db.execute(select(func.count(DocumentChunk.id)))).scalar() or 0
+        failed = (await db.execute(select(func.count(Document.id)).where(Document.status == "failed"))).scalar() or 0
+        since = utcnow() - datetime.timedelta(hours=24)
+        queries_today = (await db.execute(select(func.count(ChatMessage.id))
+                                          .where(ChatMessage.role == "user", ChatMessage.created_at >= since))).scalar() or 0
+        # Token usage recorded by the pipeline in chat_messages.meta (no fabricated numbers).
+        metas = (await db.execute(select(ChatMessage.meta).where(ChatMessage.role == "assistant",
+                                                                  ChatMessage.created_at >= since))).scalars().all()
+        tokens = sum(((m or {}).get("usage") or {}).get("prompt_tokens", 0) + ((m or {}).get("usage") or {}).get("completion_tokens", 0)
+                     for m in metas)
+        # Users' questions are private content: admins see volume, not the text of other users' queries.
         return {
             "total_users": total_users,
             "total_documents": total_docs,
-            "storage_used_mb": total_storage_mb,
+            "storage_used_mb": round(storage_bytes / (1024 * 1024), 2),
             "queries_today": queries_today,
-            "most_asked_questions": recent_queries,
-            "api_usage": api_usage
+            "most_asked_questions": [],
+            "api_usage": {"guest_accounts": guests, "indexed_chunks": chunks, "failed_documents": failed,
+                          "llm_tokens_24h": tokens, "answers_24h": len(metas)},
         }
 
     @staticmethod
     async def get_system_logs(lines: int = 100) -> list:
-        """Reads the last N lines of application logs from app.log if available, otherwise returns mocked event logs."""
-        log_filepath = "app.log"
-        if os.path.exists(log_filepath):
-            try:
-                with open(log_filepath, "r") as f:
-                    log_lines = f.readlines()
-                return [line.strip() for line in log_lines[-lines:]]
-            except Exception as e:
-                return [f"Error reading log file: {e}"]
-        
-        # Fallback Mock Logs if running in docker without persistent logging to disk
-        now = datetime.datetime.utcnow().isoformat()
-        return [
-            f"[{now}] INFO: Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)",
-            f"[{now}] INFO: RateLimiter: Initialized in-memory fallback store.",
-            f"[{now}] INFO: FaissStore: Initialized new FAISS IndexIDMap with IndexFlatIP.",
-            f"[{now}] INFO: SentenceTransformer model loaded successfully (all-MiniLM-L6-v2).",
-            f"[{now}] INFO: Database connection initialized successfully.",
-            f"[{now}] INFO: Background task workers active."
-        ]
+        path = settings.LOG_FILE
+        if not path or not os.path.exists(path):
+            return ["Log file is not available on this instance (logs go to stdout)."]
+        with open(path, "r", encoding="utf-8", errors="replace") as f:
+            tail = deque(f, maxlen=lines)
+        return [redact(line.rstrip()) for line in tail]

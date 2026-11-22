@@ -1,0 +1,311 @@
+{
+ "version": "1.0",
+ "description": "Vellum RAG evaluation set. Ground truths were written by hand from the frozen corpus in evaluation/datasets/corpus (project docs + the Vellum RAG Masterclass PDF). Categories: answerable, multi_doc, unanswerable, out_of_domain, ambiguous, hallucination_prone.",
+ "corpus_dir": "evaluation/datasets/corpus",
+ "samples": [
+  {
+   "id": "q01",
+   "category": "answerable",
+   "question": "Which embedding model does Vellum RAG use and what is the dimension of its vectors?",
+   "ground_truth": "Vellum RAG uses the sentence-transformers all-MiniLM-L6-v2 model, which produces 384-dimensional dense vectors.",
+   "expected_sources": [
+    "vellum_masterclass.pdf",
+    "architecture.md"
+   ],
+   "evidence": [
+    "all-minilm-l6-v2"
+   ]
+  },
+  {
+   "id": "q02",
+   "category": "answerable",
+   "question": "What are the default chunk size and chunk overlap used by the TextChunker?",
+   "ground_truth": "The default chunk size is 1500 characters with a 200 character overlap.",
+   "expected_sources": [
+    "vellum_masterclass.pdf",
+    "architecture.md"
+   ],
+   "evidence": [
+    "1500"
+   ]
+  },
+  {
+   "id": "q03",
+   "category": "answerable",
+   "question": "Why did the project migrate from FAISS to pgvector?",
+   "ground_truth": "FAISS used a separate binary index file, so deleting a document required a manual second operation to remove vectors and a crash could leave the index out of sync with PostgreSQL; distributed backend containers also could not easily share a local .bin file. Storing embeddings in pgvector inside the document_chunks table gives transactional ACID guarantees, normal backups and cascading deletes.",
+   "expected_sources": [
+    "vellum_masterclass.pdf"
+   ],
+   "evidence": [
+    "data consistency",
+    "out of sync",
+    "index drift"
+   ]
+  },
+  {
+   "id": "q04",
+   "category": "answerable",
+   "question": "How was the Nginx buffering problem with SSE streaming solved?",
+   "ground_truth": "Proxy buffering was disabled in the Nginx configuration with proxy_buffering off, and FastAPI responses send an X-Accel-Buffering: no header so tokens stream to the UI immediately.",
+   "expected_sources": [
+    "vellum_masterclass.pdf"
+   ],
+   "evidence": [
+    "proxy_buffering off"
+   ]
+  },
+  {
+   "id": "q05",
+   "category": "answerable",
+   "question": "How does the MMR retrieval mode work and how large is its candidate pool?",
+   "ground_truth": "MMR (Maximal Marginal Relevance) fetches a candidate pool of 3 x k chunks, selects the most similar chunk first, then iteratively picks chunks that maximise similarity to the query while penalising similarity to already selected chunks, balanced by a lambda parameter, to give diverse context.",
+   "expected_sources": [
+    "vellum_masterclass.pdf"
+   ],
+   "evidence": [
+    "candidate pool"
+   ]
+  },
+  {
+   "id": "q06",
+   "category": "answerable",
+   "question": "How does hybrid search combine semantic and keyword results?",
+   "ground_truth": "Hybrid search runs semantic search and PostgreSQL ILIKE keyword matching, normalises both score sets to the [0, 1] range and fuses them with a weighted sum: w_sem times the semantic score plus (1 - w_sem) times the keyword score.",
+   "expected_sources": [
+    "vellum_masterclass.pdf"
+   ],
+   "evidence": [
+    "weighted sum",
+    "weighted average"
+   ]
+  },
+  {
+   "id": "q07",
+   "category": "answerable",
+   "question": "What does the document upload endpoint accept and return?",
+   "ground_truth": "POST /api/upload accepts multipart/form-data with a 'file' field (PDF, DOCX, TXT or MD) and returns 201 Created with the document metadata (id, filename, file_type, file_size, total_chunks, created_at) and status 'processing'.",
+   "expected_sources": [
+    "api_documentation.md",
+    "api_endpoints.csv"
+   ],
+   "evidence": [
+    "/api/upload"
+   ]
+  },
+  {
+   "id": "q08",
+   "category": "answerable",
+   "question": "What events are sent in the /api/query Server-Sent Events stream?",
+   "ground_truth": "The stream sends a 'session' event with the session ID, a 'sources' event with the cited document chunks, data messages containing JSON content tokens, and a 'close' event with [DONE] when the stream ends.",
+   "expected_sources": [
+    "api_documentation.md",
+    "api_endpoints.csv"
+   ],
+   "evidence": [
+    "[done]"
+   ]
+  },
+  {
+   "id": "q09",
+   "category": "answerable",
+   "question": "What happens to a document's chunks and embeddings when the document is deleted?",
+   "ground_truth": "Deleting the document row triggers a cascading delete that automatically removes all of its document_chunks rows together with their vector embeddings.",
+   "expected_sources": [
+    "db_diagram.txt",
+    "vellum_masterclass.pdf"
+   ],
+   "evidence": [
+    "cascading"
+   ]
+  },
+  {
+   "id": "q10",
+   "category": "answerable",
+   "question": "What signing algorithm and token lifetime are documented for the JWT access tokens?",
+   "ground_truth": "The access tokens are HS256-signed JWTs with a configurable TTL of 1440 minutes.",
+   "expected_sources": [
+    "vellum_masterclass.pdf"
+   ],
+   "evidence": [
+    "1440"
+   ]
+  },
+  {
+   "id": "q11",
+   "category": "answerable",
+   "question": "What are the steps for a single-server Docker Compose deployment?",
+   "ground_truth": "Clone the files to the server, edit the .env configuration (GROQ_API_KEY, JWT_SECRET_KEY, DATABASE_URL, REDIS_URL), start in daemon mode with docker-compose up -d --build, and map the domain or let Nginx listen directly on port 80.",
+   "expected_sources": [
+    "deployment_guide.md"
+   ],
+   "evidence": [
+    "docker-compose up -d --build"
+   ]
+  },
+  {
+   "id": "q12",
+   "category": "answerable",
+   "question": "What start command should be used for the backend on Render or Railway?",
+   "ground_truth": "uvicorn app.main:app --host 0.0.0.0 --port $PORT",
+   "expected_sources": [
+    "deployment_guide.md"
+   ],
+   "evidence": [
+    "--port $port"
+   ]
+  },
+  {
+   "id": "q13",
+   "category": "answerable",
+   "question": "What is HyDE?",
+   "ground_truth": "HyDE (Hypothetical Document Embeddings) asks the LLM to first generate a hypothetical answer to the prompt, embeds that hypothetical text and uses it for vector search instead of the raw query, which boosts semantic retrieval recall because hypothetical answers resemble passages more than short questions do.",
+   "expected_sources": [
+    "vellum_masterclass.pdf"
+   ],
+   "evidence": [
+    "hyde"
+   ]
+  },
+  {
+   "id": "q14",
+   "category": "answerable",
+   "question": "What is the difference between IVFFlat and HNSW indexes in pgvector?",
+   "ground_truth": "IVFFlat clusters vectors into k-means cells and scans only the nearest cells; it is fast to build and uses little memory but needs rebuilding as data grows. HNSW builds a multi-layer graph, giving better query throughput and recall and allowing incremental inserts without rebuilding, but it uses more RAM.",
+   "expected_sources": [
+    "vellum_masterclass.pdf"
+   ],
+   "evidence": [
+    "ivfflat (inverted",
+    "clusters vectors"
+   ]
+  },
+  {
+   "id": "q15",
+   "category": "answerable",
+   "question": "How are follow-up questions in a chat handled before retrieval?",
+   "ground_truth": "The chat service sends the last few conversation turns to Groq and asks it to rewrite the follow-up into a standalone search query; that reformulated query is used for vector retrieval while the original conversation is kept for final answer generation.",
+   "expected_sources": [
+    "vellum_masterclass.pdf",
+    "architecture.md"
+   ],
+   "evidence": [
+    "standalone"
+   ]
+  },
+  {
+   "id": "q16",
+   "category": "answerable",
+   "question": "Which technologies make up the frontend?",
+   "ground_truth": "The frontend uses React with TypeScript, Vite, Tailwind CSS, Axios and Lucide React icons.",
+   "expected_sources": [
+    "project_readme.docx",
+    "vellum_masterclass.pdf"
+   ],
+   "evidence": [
+    "tailwind"
+   ]
+  },
+  {
+   "id": "q17",
+   "category": "answerable",
+   "question": "Which Docker image and host port does docker-compose use for PostgreSQL?",
+   "ground_truth": "PostgreSQL uses the pgvector/pgvector:pg16 image with host port 5433 mapped to container port 5432.",
+   "expected_sources": [
+    "vellum_masterclass.pdf"
+   ],
+   "evidence": [
+    "pgvector/pgvector:pg16"
+   ]
+  },
+  {
+   "id": "q18",
+   "category": "answerable",
+   "question": "How could Vellum RAG be scaled to 10,000 requests per minute?",
+   "ground_truth": "Scale stateless backend instances behind Nginx or an AWS ALB, route vector searches to PostgreSQL read replicas, move chunking and embedding to a dedicated Celery or Redis Queue worker pool, and build HNSW indexes on document_chunks.embedding.",
+   "expected_sources": [
+    "vellum_masterclass.pdf"
+   ],
+   "evidence": [
+    "10,000 requests",
+    "read replicas"
+   ]
+  },
+  {
+   "id": "q19",
+   "category": "multi_doc",
+   "question": "Describe the path of a chat question from the user to the streamed answer, including which components are involved.",
+   "ground_truth": "The React client sends the question through the Nginx gateway to the FastAPI backend; the backend may reformulate the question with Groq using chat history, embeds the query with all-MiniLM-L6-v2, runs a pgvector similarity search over document_chunks in PostgreSQL, builds the prompt with the retrieved chunks and their file names and pages, calls Groq for a streaming completion and streams tokens back via Server-Sent Events, then stores the answer and citations in the chat_messages table.",
+   "expected_sources": [
+    "architecture.md",
+    "vellum_masterclass.pdf"
+   ],
+   "evidence": [
+    "sse stream completions",
+    "full trace",
+    "dense vector search"
+   ]
+  },
+  {
+   "id": "q20",
+   "category": "multi_doc",
+   "question": "Which file formats can be uploaded and which REST endpoint lists the uploaded documents?",
+   "ground_truth": "PDF, DOCX, TXT and Markdown (MD) files can be uploaded, and GET /api/documents lists the uploaded documents.",
+   "expected_sources": [
+    "api_documentation.md",
+    "api_endpoints.csv",
+    "architecture.md"
+   ],
+   "evidence": [
+    "pdf, docx, txt",
+    "/api/documents"
+   ]
+  },
+  {
+   "id": "q21",
+   "category": "unanswerable",
+   "question": "What is the monthly price of the Vellum RAG Pro plan?",
+   "ground_truth": "The provided documents do not contain pricing information for a Pro plan.",
+   "expected_sources": [],
+   "evidence": []
+  },
+  {
+   "id": "q22",
+   "category": "unanswerable",
+   "question": "In which cloud region is the production database hosted?",
+   "ground_truth": "The provided documents do not state the cloud region of the production database.",
+   "expected_sources": [],
+   "evidence": []
+  },
+  {
+   "id": "q23",
+   "category": "out_of_domain",
+   "question": "What is the capital city of Australia?",
+   "ground_truth": "The provided documents do not contain this information.",
+   "expected_sources": [],
+   "evidence": []
+  },
+  {
+   "id": "q24",
+   "category": "hallucination_prone",
+   "question": "What p95 end-to-end latency was measured for Vellum RAG in production?",
+   "ground_truth": "The documents do not report a measured p95 latency; they only claim targets such as sub-100ms response start and first-token latencies under 150ms.",
+   "expected_sources": [
+    "vellum_masterclass.pdf"
+   ],
+   "evidence": [
+    "sub-100ms",
+    "150ms"
+   ]
+  },
+  {
+   "id": "q25",
+   "category": "ambiguous",
+   "question": "What is the default value?",
+   "ground_truth": "The question is ambiguous; the documents mention several defaults (for example chunk size 1500, chunk overlap 200, JWT TTL 1440 minutes), so the assistant should ask which setting is meant or list the relevant defaults with citations.",
+   "expected_sources": [],
+   "evidence": []
+  }
+ ],
+ "evidence_note": "evidence: lowercase substrings; a retrieved chunk counts as relevant for retrieval metrics (hit@k, MRR, precision@k) if it contains any of them. Empty for questions with no supporting text."
+}

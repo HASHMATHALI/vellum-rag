@@ -20,8 +20,8 @@ export const SignupPage: React.FC = () => {
       setError('Please fill in all fields.');
       return;
     }
-    if (password.length < 6) {
-      setError('Password must be at least 6 characters.');
+    if (password.length < 10) {
+      setError('Password must be at least 10 characters.');
       return;
     }
     setError(null);
@@ -85,7 +85,7 @@ export const SignupPage: React.FC = () => {
                 label="Password"
                 id="password"
                 type="password"
-                placeholder="Min. 6 characters"
+                placeholder="Min. 10 characters"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required

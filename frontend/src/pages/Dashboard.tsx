@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import api from '../services/api';
+import api, { errorMessage } from '../services/api';
 import { useAuth } from '../hooks/useAuth';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
@@ -26,6 +26,7 @@ interface Document {
   file_size: number;
   status: 'processing' | 'indexed' | 'failed';
   total_chunks: number;
+  error_message?: string | null;
   created_at: string;
 }
 
@@ -43,7 +44,7 @@ export const Dashboard: React.FC = () => {
       const response = await api.get('/api/documents');
       setDocuments(response.data);
     } catch (err) {
-      console.error('Failed to load documents:', err);
+      setStatusMessage(`Could not load documents: ${errorMessage(err)}`);
     }
   }, []);
 
@@ -78,7 +79,7 @@ export const Dashboard: React.FC = () => {
       setStatusMessage('File uploaded successfully. Indexing started in background...');
       fetchDocuments();
     } catch (err: any) {
-      setStatusMessage(`Upload failed: ${err.response?.data?.detail || err.message}`);
+      setStatusMessage(`Upload failed: ${errorMessage(err)}`);
     } finally {
       setUploading(false);
     }
@@ -91,7 +92,7 @@ export const Dashboard: React.FC = () => {
       await api.delete(`/api/document/${id}`);
       fetchDocuments();
     } catch (err) {
-      console.error('Failed to delete document:', err);
+      setStatusMessage(`Delete failed: ${errorMessage(err)}`);
     }
   };
 
@@ -99,11 +100,11 @@ export const Dashboard: React.FC = () => {
     if (!window.confirm('Trigger vector store index rebuild? This will re-embed all uploaded files from scratch.')) return;
     setLoading(true);
     try {
-      await api.post('/api/build-index');
-      alert('Vector database rebuilt successfully.');
+      const r = await api.post('/api/build-index');
+      alert(`Vector database rebuilt: ${r.data.reindexed} re-indexed, ${r.data.failed} failed.`);
       fetchDocuments();
     } catch (err) {
-      alert('Failed to rebuild vector database.');
+      alert(`Failed to rebuild vector database: ${errorMessage(err)}`);
     } finally {
       setLoading(false);
     }
@@ -227,7 +228,7 @@ export const Dashboard: React.FC = () => {
                 type="file" 
                 id="file-upload" 
                 className="hidden" 
-                accept=".pdf,.docx,.txt,.md"
+                accept=".pdf,.docx,.txt,.md,.csv"
                 onChange={(e) => e.target.files && handleFileUpload(e.target.files)}
               />
               <label htmlFor="file-upload" className="cursor-pointer block space-y-3">
@@ -365,7 +366,7 @@ export const Dashboard: React.FC = () => {
                             </span>
                           )}
                           {doc.status === 'failed' && (
-                            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[9px] font-bold uppercase tracking-wider bg-zinc-100 dark:bg-zinc-800 text-red-500 dark:text-red-400 border border-zinc-200/60 dark:border-zinc-700/60">
+                            <span title={doc.error_message || 'Indexing failed'} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[9px] font-bold uppercase tracking-wider bg-zinc-100 dark:bg-zinc-800 text-red-500 dark:text-red-400 border border-zinc-200/60 dark:border-zinc-700/60">
                               <AlertCircle className="w-3 h-3" />
                               <span>Failed</span>
                             </span>

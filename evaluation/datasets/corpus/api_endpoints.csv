@@ -1,0 +1,8 @@
+method,path,auth_required,description,success_status
+POST,/api/auth/register,no,"Creates a user account with email, password and full_name",201 Created
+POST,/api/auth/login,no,"Authenticates a user and returns a JWT access token, token_type and user object",200 OK
+POST,/api/upload,yes,"Uploads a document as multipart/form-data field 'file' (PDF, DOCX, TXT, MD); returns status 'processing'",201 Created
+GET,/api/documents,yes,"Lists uploaded documents with id, filename, file_type, file_size, status, total_chunks",200 OK
+DELETE,/api/document/{id},yes,Deletes a document and its associated vectors,200 OK
+POST,/api/query,yes,"Streams an LLM answer as Server-Sent Events (session, sources, content tokens, close [DONE])",200 OK
+GET,/api/history,yes,Lists all chat threads of the logged-in user,200 OK

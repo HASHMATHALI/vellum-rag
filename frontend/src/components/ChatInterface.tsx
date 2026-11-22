@@ -32,7 +32,7 @@ export const ChatInterface: React.FC = () => {
   } = useChat();
 
   const [input, setInput] = useState('');
-  const [searchMode, setSearchMode] = useState<string>(() => localStorage.getItem('searchMode') || 'semantic');
+  const [searchMode, setSearchMode] = useState<string>(() => localStorage.getItem('searchMode') || 'hybrid');
   const [k, setK] = useState<number>(() => parseInt(localStorage.getItem('k') || '5'));
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [showConfig, setShowConfig] = useState(false);
@@ -144,7 +144,7 @@ export const ChatInterface: React.FC = () => {
               <label className="font-bold text-gray-500 dark:text-dark-muted">Retrieval Chunks Count (k)</label>
               <div className="flex items-center gap-4">
                 <input 
-                  type="range" min="1" max="15" value={k} 
+                  type="range" min="1" max="10" value={k} 
                   onChange={(e) => setK(parseInt(e.target.value))}
                   className="w-full accent-brand-500 h-1.5 bg-gray-200 dark:bg-dark-border rounded-lg cursor-pointer"
                 />
@@ -228,14 +228,14 @@ export const ChatInterface: React.FC = () => {
                   </div>
 
                   {/* Sources Cited Preview Tiles */}
-                  {!isUser && msg.sources && msg.sources.length > 0 && !msg.content.toLowerCase().includes('general knowledge') && (
+                  {!isUser && msg.sources && msg.sources.length > 0 && !msg.content.startsWith("I couldn't find information") && (
                     <div className="mt-2.5 space-y-2 w-full animate-fade-in">
                       <span className="text-[10px] font-bold uppercase tracking-wider text-gray-400 dark:text-dark-muted flex items-center gap-1.5 px-1">
                         <BookOpen className="w-4 h-4 text-brand-500" />
-                        <span>Sources Cited ({msg.sources.length})</span>
+                        <span>Sources ({msg.sources.filter(x => x.cited !== false).length} cited of {msg.sources.length} retrieved)</span>
                       </span>
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4.5 w-full">
-                        {msg.sources.map((src, sIdx) => (
+                        {[...msg.sources].sort((a, b) => Number(b.cited !== false) - Number(a.cited !== false)).map((src, sIdx) => (
                           <Card 
                             key={sIdx} 
                             spotlight
@@ -245,15 +245,19 @@ export const ChatInterface: React.FC = () => {
                             <div>
                               <div className="flex items-center gap-1.5 font-bold text-gray-700 dark:text-gray-200 mb-2 truncate" title={src.filename}>
                                 <FileText className="w-4 h-4 text-brand-500 shrink-0" />
+                                {src.ref !== undefined && <span className="font-mono text-brand-500">[{src.ref}]</span>}
                                 <span className="truncate text-xs font-bold">{src.filename}</span>
+                                {src.cited === false && <span className="ml-auto text-[9px] font-semibold uppercase text-gray-400">not cited</span>}
                               </div>
                               <p className="text-gray-500 dark:text-dark-muted line-clamp-3 italic mb-3 leading-relaxed">
                                 "{src.text_content}"
                               </p>
                             </div>
                             <div className="flex items-center justify-between text-[10px] text-gray-400 dark:text-dark-muted border-t border-gray-200/20 dark:border-white/5 pt-2">
-                              <span className="font-bold">Page: {src.page_number}</span>
-                              <span className="font-mono font-black text-brand-500">Score: {(src.similarity_score * 100).toFixed(0)}%</span>
+                              <span className="font-bold truncate" title={src.section || undefined}>
+                                {src.section ? src.section : `Page ${src.page_number}`}
+                              </span>
+                              {src.section && <span className="font-bold shrink-0">p. {src.page_number}</span>}
                             </div>
                           </Card>
                         ))}

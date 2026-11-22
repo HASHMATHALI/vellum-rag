@@ -1,6 +1,6 @@
 # Database Schemas & Vector Models
 
-AuraRAG stores system metadata in a relational database (PostgreSQL) and chunk embeddings in a flat local vector index (FAISS).
+Vellum RAG stores system metadata and chunk embeddings in a single relational database (PostgreSQL) using the `pgvector` extension.
 
 ---
 
@@ -31,8 +31,8 @@ AuraRAG stores system metadata in a relational database (PostgreSQL) and chunk e
   | user_id (FK)     |          | chunk_index      |    |
   | created_at       |          | text_content     |    |
   +------------------+          | page_number      |    |
+           |                    | embedding        |    | (Vector(384) in-row)
            |                    +------------------+    |
-           |                                            |
            v                                            |
   +------------------+                                  |
   |  chat_messages   |                                  |
@@ -48,30 +48,48 @@ AuraRAG stores system metadata in a relational database (PostgreSQL) and chunk e
 
 ---
 
-## 2. FAISS Vector Database Mappings
+## 2. pgvector Vector Database Mappings
 
-FAISS indices do not natively hold document fields (like filename or text_content) in standard implementations. To prevent duplicate storage and syncing overhead, AuraRAG configures FAISS using `IndexIDMap`:
+Instead of syncing relational rows with a separate local binary index, Vellum RAG stores dense vector representations directly inside the PostgreSQL database using pgvector's `Vector(384)` type.
 
 ```text
-  FAISS Vector Store (faiss_index.bin)
-  +-------------------------------------+
-  | label: chunk_id | vector (float[384])|
-  +-------------------------------------+
-  |            102  | [0.012, -0.45,...]| ---> Match: document_chunks.id = 102
-  |            103  | [0.141,  0.03,...]| ---> Match: document_chunks.id = 103
-  +-------------------------------------+
+  PostgreSQL document_chunks Table
+  +----+-------------+----------------------+--------------------------+
+  | id | document_id | text_content         | embedding (Vector(384))  |
+  +----+-------------+----------------------+--------------------------+
+  | 102|          15 | "Rockets are fast..."| [0.012, -0.450, 0.98, ...] |
+  | 103|          15 | "History of space..."| [0.141,  0.032, 0.11, ...] |
+  +----+-------------+----------------------+--------------------------+
 ```
 
 ### Search Process Flow
 1. Query embedding yields vector: `[q_0, q_1, ...]`.
-2. FAISS similarity matching yields top ID labels: `[102, 103]`.
-3. Backend performs SQL lookup over PostgreSQL:
+2. The backend executes a direct SQL query comparing query embeddings to chunk embeddings using the `<=>` cosine distance operator:
    ```sql
-   SELECT * FROM document_chunks WHERE id IN (102, 103);
+   SELECT id, text_content, page_number
+   FROM document_chunks
+   WHERE document_id = :doc_id
+   ORDER BY embedding <=> :query_vector
+   LIMIT :k;
    ```
+3. PostgreSQL performs the calculation on-the-fly (accelerated by an optional HNSW or IVFFlat index on the `embedding` column) and returns matching database text rows directly.
 4. Context is compiled using matching database text rows and served to the LLM.
-5. Deleting a document from PostgreSQL executes a vector delete call:
-   ```python
-   # FAISS Index ID Removal
-   vector_store.delete_vectors([102, 103])
-   ```
+5. Deleting a document from PostgreSQL executes a simple SQL cascading delete (deleting the parent `documents` row automatically removes all child `document_chunks` rows and their vector embeddings).
+
+
+---
+
+## 3. Schema additions (applied idempotently at startup by `backend/app/database/migrations.py`)
+
+| Table | New columns / objects | Purpose |
+|---|---|---|
+| `users` | `mfa_enabled`, `mfa_secret`, `mfa_recovery_codes`, `last_login_at` | TOTP MFA |
+| `auth_sessions` (new) | `id`, `user_id`, `refresh_token_hash`, `expires_at`, `revoked_at`, `user_agent` | Revocable sessions, refresh rotation |
+| `documents` | `content_hash` (unique per user), `error_message` | Dedupe; failure reason |
+| `document_chunks` | `user_id` (owner, FK), `section`, `injection_score`, `tsv` (generated tsvector + GIN), HNSW index on `embedding` | Tenant filter / RLS, citations, prompt-injection flag, keyword search |
+| `chat_messages` | `meta` (json) | Timings, token usage, grounding flags |
+| indexes | `documents(user_id)`, `document_chunks(document_id)`, `document_chunks(user_id)`, `chat_sessions(user_id)`, `chat_messages(session_id)` | Query performance |
+
+Vector search defaults to an **exact search within the tenant's rows** (`VECTOR_SEARCH=exact`). An HNSW scan with a tenant filter can drop results on pgvector < 0.8 (see PERFORMANCE_REPORT.md).
+
+Optional row-level security policies: `backend/app/database/rls.sql`.

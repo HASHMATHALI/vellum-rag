@@ -22,9 +22,11 @@ interface Stats {
   queries_today: number;
   most_asked_questions: string[];
   api_usage: {
-    auth_requests: number;
-    indexing_jobs: number;
-    llm_tokens_estimated: number;
+    guest_accounts: number;
+    indexed_chunks: number;
+    failed_documents: number;
+    llm_tokens_24h: number;
+    answers_24h: number;
   };
 }
 
@@ -48,7 +50,7 @@ export const AdminPage: React.FC = () => {
     try {
       const [statsRes, healthRes, logsRes] = await Promise.all([
         api.get('/api/stats'),
-        api.get('/api/health'),
+        api.get('/api/health', { validateStatus: (st) => st === 200 || st === 503 }),
         api.get('/api/logs?limit=50')
       ]);
       setStats(statsRes.data);
@@ -187,18 +189,18 @@ export const AdminPage: React.FC = () => {
           {stats ? (
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
               <div className="p-4 rounded-xl bg-gray-50 dark:bg-dark-bg border border-gray-200/30 dark:border-white/5 text-center">
-                <span className="text-xs text-gray-500">Auth Actions</span>
-                <p className="text-2xl font-bold font-mono mt-1">{stats.api_usage.auth_requests}</p>
+                <span className="text-xs text-gray-500">Indexed Chunks</span>
+                <p className="text-2xl font-bold font-mono mt-1">{stats.api_usage.indexed_chunks}</p>
               </div>
 
               <div className="p-4 rounded-xl bg-gray-50 dark:bg-dark-bg border border-gray-200/30 dark:border-white/5 text-center">
-                <span className="text-xs text-gray-500">Indexing Workloads</span>
-                <p className="text-2xl font-bold font-mono mt-1">{stats.api_usage.indexing_jobs}</p>
+                <span className="text-xs text-gray-500">Failed Documents</span>
+                <p className="text-2xl font-bold font-mono mt-1">{stats.api_usage.failed_documents}</p>
               </div>
 
               <div className="p-4 rounded-xl bg-gray-50 dark:bg-dark-bg border border-gray-200/30 dark:border-white/5 text-center">
-                <span className="text-xs text-gray-500">Est. LLM Tokens</span>
-                <p className="text-2xl font-bold font-mono mt-1">{stats.api_usage.llm_tokens_estimated}</p>
+                <span className="text-xs text-gray-500">LLM Tokens (24h)</span>
+                <p className="text-2xl font-bold font-mono mt-1">{stats.api_usage.llm_tokens_24h}</p>
               </div>
             </div>
           ) : (

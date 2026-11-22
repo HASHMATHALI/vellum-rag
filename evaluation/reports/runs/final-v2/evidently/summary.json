@@ -1,0 +1,20 @@
+{
+ "run": "final-v2",
+ "timestamp": "2026-11-22T20:58:12",
+ "rows": 25,
+ "reference": "evaluation\\reports\\runs\\baseline-original\\records.jsonl",
+ "refusal_rate": 0.24,
+ "citation_rate_non_refusal": 1.0,
+ "no_citation_warnings": 0,
+ "total_ms_p50": 3797.6,
+ "retrieval_ms_p50": 917.1,
+ "rerank_ms_p50": 892.1,
+ "generation_ms_p50": 1150.1,
+ "ttft_ms_p50": 2788.6,
+ "prompt_tokens_p50": 884.0,
+ "faithfulness_mean": null,
+ "answer_relevancy_mean": null,
+ "context_precision_mean": null,
+ "context_recall_mean": null,
+ "workspace": "added"
+}

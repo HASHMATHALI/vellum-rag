@@ -4,16 +4,18 @@ import react from '@vitejs/plugin-react';
 // https://vitejs.dev/config/
 export default defineConfig({
   plugins: [react()],
+  build: {
+    sourcemap: false, // never publish source maps in production bundles
+  },
   server: {
-    host: '0.0.0.0',
+    host: '127.0.0.1',
     port: 5173,
     proxy: {
       '/api': {
-        target: 'http://backend:8000', // Redirect to backend service inside Docker Network
-        changeOrigin: true,
-        secure: false,
-        ws: true
-      }
-    }
-  }
+        // Local dev: backend on :8000 (scripts/dev_server.py). In Docker the nginx gateway does the routing.
+        target: process.env.VITE_PROXY_TARGET || 'http://127.0.0.1:8000',
+        changeOrigin: false,
+      },
+    },
+  },
 });

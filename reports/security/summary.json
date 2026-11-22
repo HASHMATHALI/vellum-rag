@@ -1,0 +1,1159 @@
+{
+ "bandit": {
+  "loc": 2891,
+  "findings": []
+ },
+ "semgrep": {
+  "findings": [
+   {
+    "rule": "python-logger-credential-disclosure",
+    "severity": "WARNING",
+    "location": "backend\\app\\services\\auth_service.py:62",
+    "message": "Detected a python logger call with a potential hardcoded secret \"Blocked login with a known default password for user id=%s\" being logged. This may lead to secret credentials being exposed. Make sure "
+   },
+   {
+    "rule": "python-logger-credential-disclosure",
+    "severity": "WARNING",
+    "location": "backend\\app\\services\\auth_service.py:91",
+    "message": "Detected a python logger call with a potential hardcoded secret \"Refresh token reuse detected; session revoked (user id=%s)\" being logged. This may lead to secret credentials being exposed. Make sure "
+   },
+   {
+    "rule": "request-host-used",
+    "severity": "WARNING",
+    "location": "nginx\\proxy_common.conf:3",
+    "message": "'$http_host' and '$host' variables may contain a malicious value from attacker controlled 'Host' request header. Use an explicitly configured host value or a allow list for validation."
+   }
+  ],
+  "errors": 1
+ },
+ "pip_audit": {
+  "packages": 106,
+  "vulnerabilities": []
+ },
+ "secrets": {
+  "working_tree": [
+   {
+    "file": "backend\\app\\config\\settings.py",
+    "type": "Hex High Entropy String",
+    "line": 13
+   },
+   {
+    "file": "backend\\app\\config\\settings.py",
+    "type": "Basic Auth Credentials",
+    "line": 49
+   },
+   {
+    "file": "evaluation\\datasets\\corpus\\api_documentation.md",
+    "type": "Secret Keyword",
+    "line": 19
+   },
+   {
+    "file": "frontend\\src\\pages\\DocsPage.tsx",
+    "type": "Secret Keyword",
+    "line": 13
+   },
+   {
+    "file": "nginx\\nginx.conf",
+    "type": "Secret Keyword",
+    "line": 22
+   },
+   {
+    "file": "scripts\\dast_probe.py",
+    "type": "JSON Web Token",
+    "line": 79
+   },
+   {
+    "file": "scripts\\verify_original_vulns.py",
+    "type": "Hex High Entropy String",
+    "line": 15
+   },
+   {
+    "file": "scripts\\verify_original_vulns.py",
+    "type": "Secret Keyword",
+    "line": 15
+   },
+   {
+    "file": "tests\\conftest.py",
+    "type": "Secret Keyword",
+    "line": 49
+   },
+   {
+    "file": "tests\\integration\\test_api_auth.py",
+    "type": "Secret Keyword",
+    "line": 160
+   },
+   {
+    "file": "tests\\integration\\test_api_auth.py",
+    "type": "Secret Keyword",
+    "line": 167
+   },
+   {
+    "file": "tests\\integration\\test_api_documents_chat.py",
+    "type": "Secret Keyword",
+    "line": 260
+   }
+  ],
+  "git_history": [
+   {
+    "type": "Secret Keyword",
+    "patch_line": 207
+   },
+   {
+    "type": "Secret Keyword",
+    "patch_line": 215
+   },
+   {
+    "type": "Base64 High Entropy String",
+    "patch_line": 283
+   },
+   {
+    "type": "Base64 High Entropy String",
+    "patch_line": 296
+   },
+   {
+    "type": "Base64 High Entropy String",
+    "patch_line": 311
+   },
+   {
+    "type": "Base64 High Entropy String",
+    "patch_line": 321
+   },
+   {
+    "type": "Base64 High Entropy String",
+    "patch_line": 352
+   },
+   {
+    "type": "Base64 High Entropy String",
+    "patch_line": 369
+   },
+   {
+    "type": "Base64 High Entropy String",
+    "patch_line": 386
+   },
+   {
+    "type": "Base64 High Entropy String",
+    "patch_line": 396
+   },
+   {
+    "type": "Base64 High Entropy String",
+    "patch_line": 410
+   },
+   {
+    "type": "Base64 High Entropy String",
+    "patch_line": 428
+   },
+   {
+    "type": "Base64 High Entropy String",
+    "patch_line": 438
+   },
+   {
+    "type": "Base64 High Entropy String",
+    "patch_line": 448
+   },
+   {
+    "type": "Base64 High Entropy String",
+    "patch_line": 458
+   },
+   {
+    "type": "Base64 High Entropy String",
+    "patch_line": 468
+   },
+   {
+    "type": "Base64 High Entropy String",
+    "patch_line": 482
+   },
+   {
+    "type": "Base64 High Entropy String",
+    "patch_line": 498
+   },
+   {
+    "type": "Base64 High Entropy String",
+    "patch_line": 514
+   },
+   {
+    "type": "Base64 High Entropy String",
+    "patch_line": 530
+   },
+   {
+    "type": "Base64 High Entropy String",
+    "patch_line": 545
+   },
+   {
+    "type": "Base64 High Entropy String",
+    "patch_line": 564
+   },
+   {
+    "type": "Base64 High Entropy String",
+    "patch_line": 578
+   },
+   {
+    "type": "Base64 High Entropy String",
+    "patch_line": 595
+   },
+   {
+    "type": "Base64 High Entropy String",
+    "patch_line": 606
+   },
+   {
+    "type": "Base64 High Entropy String",
+    "patch_line": 617
+   },
+   {
+    "type": "Base64 High Entropy String",
+    "patch_line": 627
+   },
+   {
+    "type": "Base64 High Entropy String",
+    "patch_line": 634
+   },
+   {
+    "type": "Base64 High Entropy String",
+    "patch_line": 645
+   },
+   {
+    "type": "Base64 High Entropy String",
+    "patch_line": 659
+   },
+   {
+    "type": "Base64 High Entropy String",
+    "patch_line": 669
+   },
+   {
+    "type": "Base64 High Entropy String",
+    "patch_line": 683
+   },
+   {
+    "type": "Base64 High Entropy String",
+    "patch_line": 692
+   },
+   {
+    "type": "Base64 High Entropy String",
+    "patch_line": 699
+   },
+   {
+    "type": "Base64 High Entropy String",
+    "patch_line": 713
+   },
+   {
+    "type": "Base64 High Entropy String",
+    "patch_line": 727
+   },
+   {
+    "type": "Base64 High Entropy String",
+    "patch_line": 741
+   },
+   {
+    "type": "Base64 High Entropy String",
+    "patch_line": 751
+   },
+   {
+    "type": "Base64 High Entropy String",
+    "patch_line": 762
+   },
+   {
+    "type": "Base64 High Entropy String",
+    "patch_line": 772
+   },
+   {
+    "type": "Base64 High Entropy String",
+    "patch_line": 781
+   },
+   {
+    "type": "Base64 High Entropy String",
+    "patch_line": 787
+   },
+   {
+    "type": "Base64 High Entropy String",
+    "patch_line": 796
+   },
+   {
+    "type": "Base64 High Entropy String",
+    "patch_line": 805
+   },
+   {
+    "type": "Base64 High Entropy String",
+    "patch_line": 814
+   },
+   {
+    "type": "Base64 High Entropy String",
+    "patch_line": 820
+   },
+   {
+    "type": "Base64 High Entropy String",
+    "patch_line": 826
+   },
+   {
+    "type": "Base64 High Entropy String",
+    "patch_line": 836
+   },
+   {
+    "type": "Base64 High Entropy String",
+    "patch_line": 846
+   },
+   {
+    "type": "Base64 High Entropy String",
+    "patch_line": 852
+   },
+   {
+    "type": "Base64 High Entropy String",
+    "patch_line": 858
+   },
+   {
+    "type": "Base64 High Entropy String",
+    "patch_line": 879
+   },
+   {
+    "type": "Base64 High Entropy String",
+    "patch_line": 891
+   },
+   {
+    "type": "Base64 High Entropy String",
+    "patch_line": 898
+   },
+   {
+    "type": "Base64 High Entropy String",
+    "patch_line": 912
+   },
+   {
+    "type": "Base64 High Entropy String",
+    "patch_line": 919
+   },
+   {
+    "type": "Base64 High Entropy String",
+    "patch_line": 925
+   },
+   {
+    "type": "Base64 High Entropy String",
+    "patch_line": 962
+   },
+   {
+    "type": "Base64 High Entropy String",
+    "patch_line": 974
+   },
+   {
+    "type": "Base64 High Entropy String",
+    "patch_line": 984
+   },
+   {
+    "type": "Base64 High Entropy String",
+    "patch_line": 997
+   },
+   {
+    "type": "Base64 High Entropy String",
+    "patch_line": 1010
+   },
+   {
+    "type": "Base64 High Entropy String",
+    "patch_line": 1023
+   },
+   {
+    "type": "Base64 High Entropy String",
+    "patch_line": 1057
+   },
+   {
+    "type": "Base64 High Entropy String",
+    "patch_line": 1070
+   },
+   {
+    "type": "Base64 High Entropy String",
+    "patch_line": 1080
+   },
+   {
+    "type": "Base64 High Entropy String",
+    "patch_line": 1101
+   },
+   {
+    "type": "Base64 High Entropy String",
+    "patch_line": 1111
+   },
+   {
+    "type": "Base64 High Entropy String",
+    "patch_line": 1121
+   },
+   {
+    "type": "Base64 High Entropy String",
+    "patch_line": 1131
+   },
+   {
+    "type": "Base64 High Entropy String",
+    "patch_line": 1141
+   },
+   {
+    "type": "Base64 High Entropy String",
+    "patch_line": 1151
+   },
+   {
+    "type": "Base64 High Entropy String",
+    "patch_line": 1176
+   },
+   {
+    "type": "Base64 High Entropy String",
+    "patch_line": 1189
+   },
+   {
+    "type": "Base64 High Entropy String",
+    "patch_line": 1201
+   },
+   {
+    "type": "Base64 High Entropy String",
+    "patch_line": 1211
+   },
+   {
+    "type": "Base64 High Entropy String",
+    "patch_line": 1221
+   },
+   {
+    "type": "Base64 High Entropy String",
+    "patch_line": 1228
+   },
+   {
+    "type": "Base64 High Entropy String",
+    "patch_line": 1234
+   },
+   {
+    "type": "Base64 High Entropy String",
+    "patch_line": 1251
+   },
+   {
+    "type": "Base64 High Entropy String",
+    "patch_line": 1264
+   },
+   {
+    "type": "Base64 High Entropy String",
+    "patch_line": 1273
+   },
+   {
+    "type": "Base64 High Entropy String",
+    "patch_line": 1282
+   },
+   {
+    "type": "Base64 High Entropy String",
+    "patch_line": 1295
+   },
+   {
+    "type": "Base64 High Entropy String",
+    "patch_line": 1302
+   },
+   {
+    "type": "Base64 High Entropy String",
+    "patch_line": 1309
+   },
+   {
+    "type": "Base64 High Entropy String",
+    "patch_line": 1323
+   },
+   {
+    "type": "Base64 High Entropy String",
+    "patch_line": 1330
+   },
+   {
+    "type": "Base64 High Entropy String",
+    "patch_line": 1339
+   },
+   {
+    "type": "Base64 High Entropy String",
+    "patch_line": 1348
+   },
+   {
+    "type": "Base64 High Entropy String",
+    "patch_line": 1360
+   },
+   {
+    "type": "Base64 High Entropy String",
+    "patch_line": 1375
+   },
+   {
+    "type": "Base64 High Entropy String",
+    "patch_line": 1414
+   },
+   {
+    "type": "Base64 High Entropy String",
+    "patch_line": 1424
+   },
+   {
+    "type": "Base64 High Entropy String",
+    "patch_line": 1436
+   },
+   {
+    "type": "Base64 High Entropy String",
+    "patch_line": 1446
+   },
+   {
+    "type": "Base64 High Entropy String",
+    "patch_line": 1452
+   },
+   {
+    "type": "Base64 High Entropy String",
+    "patch_line": 1482
+   },
+   {
+    "type": "Base64 High Entropy String",
+    "patch_line": 1492
+   },
+   {
+    "type": "Base64 High Entropy String",
+    "patch_line": 1505
+   },
+   {
+    "type": "Base64 High Entropy String",
+    "patch_line": 1525
+   },
+   {
+    "type": "Base64 High Entropy String",
+    "patch_line": 1541
+   },
+   {
+    "type": "Base64 High Entropy String",
+    "patch_line": 1555
+   },
+   {
+    "type": "Base64 High Entropy String",
+    "patch_line": 1564
+   },
+   {
+    "type": "Base64 High Entropy String",
+    "patch_line": 1574
+   },
+   {
+    "type": "Base64 High Entropy String",
+    "patch_line": 1598
+   },
+   {
+    "type": "Base64 High Entropy String",
+    "patch_line": 1611
+   },
+   {
+    "type": "Base64 High Entropy String",
+    "patch_line": 1624
+   },
+   {
+    "type": "Base64 High Entropy String",
+    "patch_line": 1636
+   },
+   {
+    "type": "Base64 High Entropy String",
+    "patch_line": 1648
+   },
+   {
+    "type": "Base64 High Entropy String",
+    "patch_line": 1663
+   },
+   {
+    "type": "Base64 High Entropy String",
+    "patch_line": 1675
+   },
+   {
+    "type": "Base64 High Entropy String",
+    "patch_line": 1702
+   },
+   {
+    "type": "Base64 High Entropy String",
+    "patch_line": 1715
+   },
+   {
+    "type": "Base64 High Entropy String",
+    "patch_line": 1725
+   },
+   {
+    "type": "Base64 High Entropy String",
+    "patch_line": 1738
+   },
+   {
+    "type": "Base64 High Entropy String",
+    "patch_line": 1744
+   },
+   {
+    "type": "Base64 High Entropy String",
+    "patch_line": 1754
+   },
+   {
+    "type": "Base64 High Entropy String",
+    "patch_line": 1768
+   },
+   {
+    "type": "Base64 High Entropy String",
+    "patch_line": 1781
+   },
+   {
+    "type": "Base64 High Entropy String",
+    "patch_line": 1797
+   },
+   {
+    "type": "Base64 High Entropy String",
+    "patch_line": 1807
+   },
+   {
+    "type": "Base64 High Entropy String",
+    "patch_line": 1817
+   },
+   {
+    "type": "Base64 High Entropy String",
+    "patch_line": 1830
+   },
+   {
+    "type": "Base64 High Entropy String",
+    "patch_line": 1840
+   },
+   {
+    "type": "Base64 High Entropy String",
+    "patch_line": 1850
+   },
+   {
+    "type": "Base64 High Entropy String",
+    "patch_line": 1862
+   },
+   {
+    "type": "Base64 High Entropy String",
+    "patch_line": 1872
+   },
+   {
+    "type": "Base64 High Entropy String",
+    "patch_line": 1878
+   },
+   {
+    "type": "Base64 High Entropy String",
+    "patch_line": 1891
+   },
+   {
+    "type": "Base64 High Entropy String",
+    "patch_line": 1904
+   },
+   {
+    "type": "Base64 High Entropy String",
+    "patch_line": 1917
+   },
+   {
+    "type": "Base64 High Entropy String",
+    "patch_line": 1924
+   },
+   {
+    "type": "Base64 High Entropy String",
+    "patch_line": 1934
+   },
+   {
+    "type": "Base64 High Entropy String",
+    "patch_line": 1946
+   },
+   {
+    "type": "Base64 High Entropy String",
+    "patch_line": 1956
+   },
+   {
+    "type": "Base64 High Entropy String",
+    "patch_line": 1965
+   },
+   {
+    "type": "Base64 High Entropy String",
+    "patch_line": 1975
+   },
+   {
+    "type": "Base64 High Entropy String",
+    "patch_line": 1984
+   },
+   {
+    "type": "Base64 High Entropy String",
+    "patch_line": 2000
+   },
+   {
+    "type": "Base64 High Entropy String",
+    "patch_line": 2024
+   },
+   {
+    "type": "Base64 High Entropy String",
+    "patch_line": 2043
+   },
+   {
+    "type": "Base64 High Entropy String",
+    "patch_line": 2060
+   },
+   {
+    "type": "Base64 High Entropy String",
+    "patch_line": 2077
+   },
+   {
+    "type": "Base64 High Entropy String",
+    "patch_line": 2092
+   },
+   {
+    "type": "Base64 High Entropy String",
+    "patch_line": 2111
+   },
+   {
+    "type": "Base64 High Entropy String",
+    "patch_line": 2127
+   },
+   {
+    "type": "Base64 High Entropy String",
+    "patch_line": 2145
+   },
+   {
+    "type": "Base64 High Entropy String",
+    "patch_line": 2169
+   },
+   {
+    "type": "Base64 High Entropy String",
+    "patch_line": 2187
+   },
+   {
+    "type": "Base64 High Entropy String",
+    "patch_line": 2201
+   },
+   {
+    "type": "Base64 High Entropy String",
+    "patch_line": 2222
+   },
+   {
+    "type": "Base64 High Entropy String",
+    "patch_line": 2245
+   },
+   {
+    "type": "Base64 High Entropy String",
+    "patch_line": 2258
+   },
+   {
+    "type": "Base64 High Entropy String",
+    "patch_line": 2268
+   },
+   {
+    "type": "Base64 High Entropy String",
+    "patch_line": 2304
+   },
+   {
+    "type": "Base64 High Entropy String",
+    "patch_line": 2339
+   },
+   {
+    "type": "Base64 High Entropy String",
+    "patch_line": 2359
+   },
+   {
+    "type": "Base64 High Entropy String",
+    "patch_line": 2375
+   },
+   {
+    "type": "Base64 High Entropy String",
+    "patch_line": 2395
+   },
+   {
+    "type": "Base64 High Entropy String",
+    "patch_line": 2413
+   },
+   {
+    "type": "Base64 High Entropy String",
+    "patch_line": 2430
+   },
+   {
+    "type": "Base64 High Entropy String",
+    "patch_line": 2443
+   },
+   {
+    "type": "Base64 High Entropy String",
+    "patch_line": 2460
+   },
+   {
+    "type": "Base64 High Entropy String",
+    "patch_line": 2481
+   },
+   {
+    "type": "Base64 High Entropy String",
+    "patch_line": 2503
+   },
+   {
+    "type": "Base64 High Entropy String",
+    "patch_line": 2523
+   },
+   {
+    "type": "Base64 High Entropy String",
+    "patch_line": 2545
+   },
+   {
+    "type": "Base64 High Entropy String",
+    "patch_line": 2567
+   },
+   {
+    "type": "Base64 High Entropy String",
+    "patch_line": 2587
+   },
+   {
+    "type": "Base64 High Entropy String",
+    "patch_line": 2606
+   },
+   {
+    "type": "Base64 High Entropy String",
+    "patch_line": 2627
+   },
+   {
+    "type": "Base64 High Entropy String",
+    "patch_line": 2647
+   },
+   {
+    "type": "Base64 High Entropy String",
+    "patch_line": 2666
+   },
+   {
+    "type": "Base64 High Entropy String",
+    "patch_line": 2688
+   },
+   {
+    "type": "Base64 High Entropy String",
+    "patch_line": 2707
+   },
+   {
+    "type": "Base64 High Entropy String",
+    "patch_line": 2723
+   },
+   {
+    "type": "Base64 High Entropy String",
+    "patch_line": 2739
+   },
+   {
+    "type": "Base64 High Entropy String",
+    "patch_line": 2758
+   },
+   {
+    "type": "Base64 High Entropy String",
+    "patch_line": 2777
+   },
+   {
+    "type": "Base64 High Entropy String",
+    "patch_line": 2798
+   },
+   {
+    "type": "Base64 High Entropy String",
+    "patch_line": 2820
+   },
+   {
+    "type": "Base64 High Entropy String",
+    "patch_line": 2836
+   },
+   {
+    "type": "Base64 High Entropy String",
+    "patch_line": 2852
+   },
+   {
+    "type": "Base64 High Entropy String",
+    "patch_line": 2866
+   },
+   {
+    "type": "Base64 High Entropy String",
+    "patch_line": 2875
+   },
+   {
+    "type": "Base64 High Entropy String",
+    "patch_line": 2887
+   },
+   {
+    "type": "Base64 High Entropy String",
+    "patch_line": 2893
+   },
+   {
+    "type": "Base64 High Entropy String",
+    "patch_line": 2905
+   },
+   {
+    "type": "Base64 High Entropy String",
+    "patch_line": 2924
+   },
+   {
+    "type": "Base64 High Entropy String",
+    "patch_line": 2934
+   },
+   {
+    "type": "Base64 High Entropy String",
+    "patch_line": 2944
+   },
+   {
+    "type": "Base64 High Entropy String",
+    "patch_line": 2954
+   },
+   {
+    "type": "Base64 High Entropy String",
+    "patch_line": 2964
+   },
+   {
+    "type": "Base64 High Entropy String",
+    "patch_line": 2983
+   },
+   {
+    "type": "Base64 High Entropy String",
+    "patch_line": 2989
+   },
+   {
+    "type": "Base64 High Entropy String",
+    "patch_line": 2996
+   },
+   {
+    "type": "Base64 High Entropy String",
+    "patch_line": 3003
+   },
+   {
+    "type": "Base64 High Entropy String",
+    "patch_line": 3016
+   },
+   {
+    "type": "Base64 High Entropy String",
+    "patch_line": 3026
+   },
+   {
+    "type": "Base64 High Entropy String",
+    "patch_line": 3055
+   },
+   {
+    "type": "Base64 High Entropy String",
+    "patch_line": 3073
+   },
+   {
+    "type": "Base64 High Entropy String",
+    "patch_line": 3099
+   },
+   {
+    "type": "Base64 High Entropy String",
+    "patch_line": 3142
+   },
+   {
+    "type": "Base64 High Entropy String",
+    "patch_line": 3168
+   },
+   {
+    "type": "Base64 High Entropy String",
+    "patch_line": 3181
+   },
+   {
+    "type": "Base64 High Entropy String",
+    "patch_line": 3188
+   },
+   {
+    "type": "Base64 High Entropy String",
+    "patch_line": 3198
+   },
+   {
+    "type": "Base64 High Entropy String",
+    "patch_line": 3207
+   },
+   {
+    "type": "Base64 High Entropy String",
+    "patch_line": 3228
+   },
+   {
+    "type": "Base64 High Entropy String",
+    "patch_line": 3240
+   },
+   {
+    "type": "Base64 High Entropy String",
+    "patch_line": 3253
+   },
+   {
+    "type": "Base64 High Entropy String",
+    "patch_line": 3280
+   },
+   {
+    "type": "Base64 High Entropy String",
+    "patch_line": 3290
+   },
+   {
+    "type": "Base64 High Entropy String",
+    "patch_line": 3305
+   },
+   {
+    "type": "Base64 High Entropy String",
+    "patch_line": 3322
+   },
+   {
+    "type": "Base64 High Entropy String",
+    "patch_line": 3329
+   },
+   {
+    "type": "Base64 High Entropy String",
+    "patch_line": 3342
+   },
+   {
+    "type": "Base64 High Entropy String",
+    "patch_line": 3360
+   },
+   {
+    "type": "Base64 High Entropy String",
+    "patch_line": 3376
+   },
+   {
+    "type": "Base64 High Entropy String",
+    "patch_line": 3393
+   },
+   {
+    "type": "Base64 High Entropy String",
+    "patch_line": 3408
+   },
+   {
+    "type": "Base64 High Entropy String",
+    "patch_line": 3430
+   },
+   {
+    "type": "Base64 High Entropy String",
+    "patch_line": 3441
+   },
+   {
+    "type": "Base64 High Entropy String",
+    "patch_line": 3487
+   },
+   {
+    "type": "Base64 High Entropy String",
+    "patch_line": 3511
+   },
+   {
+    "type": "Base64 High Entropy String",
+    "patch_line": 3520
+   },
+   {
+    "type": "Base64 High Entropy String",
+    "patch_line": 3530
+   },
+   {
+    "type": "Base64 High Entropy String",
+    "patch_line": 3540
+   },
+   {
+    "type": "Base64 High Entropy String",
+    "patch_line": 3550
+   },
+   {
+    "type": "Base64 High Entropy String",
+    "patch_line": 3564
+   },
+   {
+    "type": "Base64 High Entropy String",
+    "patch_line": 3573
+   },
+   {
+    "type": "Base64 High Entropy String",
+    "patch_line": 3596
+   },
+   {
+    "type": "Base64 High Entropy String",
+    "patch_line": 3609
+   },
+   {
+    "type": "Base64 High Entropy String",
+    "patch_line": 3647
+   },
+   {
+    "type": "Base64 High Entropy String",
+    "patch_line": 3657
+   },
+   {
+    "type": "Base64 High Entropy String",
+    "patch_line": 3670
+   },
+   {
+    "type": "Base64 High Entropy String",
+    "patch_line": 3687
+   },
+   {
+    "type": "Base64 High Entropy String",
+    "patch_line": 3705
+   },
+   {
+    "type": "Base64 High Entropy String",
+    "patch_line": 3718
+   },
+   {
+    "type": "Base64 High Entropy String",
+    "patch_line": 3731
+   },
+   {
+    "type": "Base64 High Entropy String",
+    "patch_line": 3741
+   },
+   {
+    "type": "Base64 High Entropy String",
+    "patch_line": 3751
+   },
+   {
+    "type": "Base64 High Entropy String",
+    "patch_line": 3758
+   },
+   {
+    "type": "Base64 High Entropy String",
+    "patch_line": 3772
+   },
+   {
+    "type": "Base64 High Entropy String",
+    "patch_line": 3791
+   },
+   {
+    "type": "Base64 High Entropy String",
+    "patch_line": 3804
+   },
+   {
+    "type": "Base64 High Entropy String",
+    "patch_line": 3817
+   },
+   {
+    "type": "Base64 High Entropy String",
+    "patch_line": 3830
+   },
+   {
+    "type": "Base64 High Entropy String",
+    "patch_line": 3845
+   },
+   {
+    "type": "Base64 High Entropy String",
+    "patch_line": 3859
+   },
+   {
+    "type": "Base64 High Entropy String",
+    "patch_line": 3890
+   },
+   {
+    "type": "Base64 High Entropy String",
+    "patch_line": 3897
+   },
+   {
+    "type": "Base64 High Entropy String",
+    "patch_line": 3911
+   },
+   {
+    "type": "Base64 High Entropy String",
+    "patch_line": 3925
+   },
+   {
+    "type": "Base64 High Entropy String",
+    "patch_line": 3985
+   },
+   {
+    "type": "Base64 High Entropy String",
+    "patch_line": 3992
+   },
+   {
+    "type": "Basic Auth Credentials",
+    "patch_line": 4880
+   },
+   {
+    "type": "Hex High Entropy String",
+    "patch_line": 4948
+   },
+   {
+    "type": "Secret Keyword",
+    "patch_line": 5288
+   },
+   {
+    "type": "Secret Keyword",
+    "patch_line": 8068
+   },
+   {
+    "type": "Secret Keyword",
+    "patch_line": 10948
+   },
+   {
+    "type": "Secret Keyword",
+    "patch_line": 14676
+   }
+  ]
+ },
+ "npm_audit": {
+  "info": 0,
+  "low": 0,
+  "moderate": 0,
+  "high": 0,
+  "critical": 0,
+  "total": 0
+ }
+}

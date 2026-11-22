@@ -1,0 +1,39 @@
+{
+ "phoenix_url": "http://127.0.0.1:6006",
+ "project": "vellum-rag-eval",
+ "records": "evaluation\\reports\\runs\\final-v2\\records.jsonl",
+ "traced_records": 25,
+ "spans": 98,
+ "complete_traces": 25,
+ "incomplete": [],
+ "stage_latency": {
+  "eval.sample": {
+   "p50_ms": 3788.8,
+   "max_ms": 26088.7,
+   "count": 25
+  },
+  "rag.generate": {
+   "p50_ms": 3124.3,
+   "max_ms": 11961.2,
+   "count": 23
+  },
+  "rag.query": {
+   "p50_ms": 3788.8,
+   "max_ms": 26088.7,
+   "count": 25
+  },
+  "rag.retrieve": {
+   "p50_ms": 913.8,
+   "max_ms": 25212.6,
+   "count": 25
+  }
+ },
+ "llm_tokens": {
+  "spans_with_usage": 23,
+  "total": 28905,
+  "p50_per_call": 1161.0
+ },
+ "secret_leaks": [],
+ "annotations_logged": 0,
+ "how_to_inspect": "Open http://127.0.0.1:6006 -> project 'vellum-rag-eval' -> filter by attribute eval.sample_id or a trace_id from records.jsonl"
+}
