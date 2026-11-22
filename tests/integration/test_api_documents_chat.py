@@ -271,3 +271,25 @@ async def test_gloss_event_checks_numbered_citations(client, unique):
     sid = events[0][1]["session_id"]
     hist = (await client.get(f"/api/history/{sid}", headers=bearer(s))).json()
     assert hist[1]["gloss"]["method"] == "lexical-overlap-v1"  # recomputed on read
+
+
+async def test_overview_question_uses_a_spread_of_own_documents(client, unique, fake_llm):
+    alice, bob = await _user(client, unique, "ov-a"), await _user(client, unique, "ov-b")
+    await _upload(client, alice, "falcon.txt", ALICE_DOC)
+    await _upload(client, alice, "garden.txt", BOB_DOC)
+    await _upload(client, bob, "bob-secret.txt", b"Bob's private salary review notes: confidential figures.")
+    fake_llm.calls.clear()
+    r, events = await _query(client, alice, "What information is contained in the uploaded files?")
+    sources = next(d for e, d in events if e == "sources")
+    assert {s["filename"] for s in sources} == {"falcon.txt", "garden.txt"}  # every own document, none of Bob's
+    assert fake_llm.calls, "overview questions must reach the LLM instead of an automatic refusal"
+    assert all("salary" not in m["content"] for call in fake_llm.calls for m in call)
+    answer = "".join(d["content"] for e, d in events if e == "message")
+    assert "[1]" in answer
+
+
+async def test_overview_with_no_documents_still_refuses(client, unique, fake_llm):
+    s = await _user(client, unique, "ov-empty")
+    fake_llm.calls.clear()
+    r, events = await _query(client, s, "Summarize my documents")
+    assert "".join(d["content"] for e, d in events if e == "message") == NO_ANSWER and fake_llm.calls == []

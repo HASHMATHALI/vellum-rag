@@ -248,6 +248,51 @@ class Retriever:
             return cls.mmr(candidates, k)
         return candidates[:k]
 
+    @classmethod
+    async def overview(cls, db: AsyncSession, user_id: int, document_ids: Optional[List[int]] = None,
+                       max_chunks: int = 8, stats: Optional[RetrievalStats] = None) -> List[RetrievedChunk]:
+        """Representative passages for questions about the documents as a whole ("what is in my files?").
+
+        Such questions do not match any single passage well, so relevance ranking + threshold would refuse them.
+        Instead, take evenly spaced chunks from each of the caller's indexed documents (newest documents first),
+        always including each document's opening chunk. Same ownership filter as `search`.
+        """
+        if user_id is None:
+            raise ValueError("user_id is required for retrieval (authorisation filter)")
+        if document_ids is not None and not document_ids:
+            return []
+        t0 = time.perf_counter()
+        index_rows = (await db.execute(
+            select(DocumentChunk.id, DocumentChunk.document_id, DocumentChunk.chunk_index)
+            .join(Document, Document.id == DocumentChunk.document_id)
+            .where(DocumentChunk.user_id == user_id, Document.user_id == user_id, Document.status == "indexed",
+                   *([DocumentChunk.document_id.in_(document_ids)] if document_ids is not None else []))
+            .order_by(Document.created_at.desc(), DocumentChunk.document_id, DocumentChunk.chunk_index)
+            .limit(5000)
+        )).all()
+        by_doc: Dict[int, List[int]] = {}
+        for chunk_id, doc_id, _ in index_rows:
+            by_doc.setdefault(doc_id, []).append(chunk_id)
+        if not by_doc:
+            return []
+        per_doc = max(1, max_chunks // len(by_doc))
+        picked: List[int] = []
+        for ids in by_doc.values():
+            if len(picked) >= max_chunks:
+                break
+            n = min(per_doc, len(ids), max_chunks - len(picked))
+            step = len(ids) / n
+            picked.extend(ids[int(i * step)] for i in range(n))  # i=0 is always the opening chunk
+        rows = (await db.execute(
+            _owned_chunks(user_id, document_ids).where(DocumentChunk.id.in_(picked))
+            .order_by(DocumentChunk.document_id, DocumentChunk.chunk_index)
+        )).all()
+        if stats is not None:
+            stats.candidates = len(index_rows)
+            stats.after_threshold = len(rows)
+            stats.search_ms = (time.perf_counter() - t0) * 1000
+        return [_to_result(chunk, filename, 1.0) for chunk, filename in rows]
+
     # --- Backwards-compatible wrappers (old call sites/tests) ---
     @classmethod
     async def semantic_search(cls, db, query, k=5, document_ids=None, user_id=None):

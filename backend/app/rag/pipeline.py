@@ -23,6 +23,22 @@ from app.retrieval.retriever import RetrievalStats, RetrievedChunk, Retriever
 
 logger = logging.getLogger(__name__)
 MAX_QUESTION_CHARS = 4000
+
+# Questions about the documents as a whole ("what is in my files?", "summarise this document").
+_DOCS = r"(?:document|doc|file|pdf|upload|upload(?:ed)?\s+files?|material|text|content)s?"
+_OVERVIEW_PATTERNS = [
+    re.compile(r"\b(?:summar(?:y|ise|ize|ies)|overview|outline|tl;?dr|gist)\b", re.I),
+    re.compile(r"\bwhat\s+(?:kind\s+of\s+|sort\s+of\s+)?(?:information|info|topics?|subjects?|content|data|details)\b.*\b" + _DOCS + r"\b", re.I),
+    re.compile(r"\bwhat(?:'s| is| are)\s+(?:in|inside)\s+(?:the|this|these|my)\s+" + _DOCS + r"\b", re.I),
+    re.compile(r"\bwhat\s+(?:is|are|'s)\s+(?:the|this|these|my)\s+" + _DOCS + r"\s+about\b", re.I),
+    re.compile(r"\b(?:main|key)\s+(?:points|topics|themes|ideas|takeaways)\b", re.I),
+    re.compile(r"\bwhat\s+(?:does|do)\s+(?:the|this|these|my)\s+" + _DOCS + r"\s+(?:cover|contain|say|discuss|describe|include)\b", re.I),
+]
+
+
+def is_overview_question(question: str) -> bool:
+    q = question.strip()
+    return len(q) <= 300 and any(p.search(q) for p in _OVERVIEW_PATTERNS)
 _CITATION = re.compile(r"\[(\d{1,3})\]")
 _ODD_CITATION = re.compile(r"\[(\d{1,3})[†‡][^\]]*\]")  # e.g. [1†L3-L5]
 
@@ -131,8 +147,14 @@ class RAGPipeline:
         t0 = time.perf_counter()
         with tracing.span("rag.retrieve", "RETRIEVER", {"retrieval.mode": mode, "retrieval.top_k": k}) as s:
             tracing.set_attrs(s, {tracing.INPUT: search_query}, content=True)
-            chunks = await Retriever.search(db, search_query, user_id=user_id, mode=mode, k=k,
-                                            document_ids=document_ids, stats=stats)
+            overview = is_overview_question(question)
+            if overview:
+                # Whole-document questions match no single passage well; give the model a spread of each document.
+                chunks = await Retriever.overview(db, user_id, document_ids, max_chunks=max(k, 8), stats=stats)
+            else:
+                chunks = await Retriever.search(db, search_query, user_id=user_id, mode=mode, k=k,
+                                                document_ids=document_ids, stats=stats)
+            s.set_attribute("retrieval.overview", overview)
             await self._score_injection(db, chunks)
             s.set_attribute("retrieval.candidates", stats.candidates)
             s.set_attribute("retrieval.after_threshold", stats.after_threshold)
@@ -145,6 +167,7 @@ class RAGPipeline:
                 s.set_attribute(f"{p}.metadata", tracing._clean({"filename": c.filename, "page": c.page_number}))
                 tracing.set_attrs(s, {f"{p}.content": c.text}, content=True)
         timings["retrieval_ms"] = (time.perf_counter() - t0) * 1000
+        timings["overview_mode"] = 1.0 if overview else 0.0
         timings["embed_ms"] = stats.embed_ms
         timings["vector_search_ms"] = stats.search_ms
         timings["rerank_ms"] = stats.rerank_ms
