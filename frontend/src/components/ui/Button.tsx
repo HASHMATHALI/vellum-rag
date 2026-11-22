@@ -15,13 +15,13 @@ export const Button: React.FC<ButtonProps> = ({
   disabled,
   ...props
 }) => {
-  const baseStyle = 'inline-flex items-center justify-center font-semibold rounded-xl active:scale-[0.98] transition-all disabled:opacity-50 disabled:pointer-events-none';
+  const baseStyle = 'inline-flex items-center justify-center font-semibold active:scale-[0.98] transition-all disabled:opacity-50 disabled:pointer-events-none';
   
   const variants = {
-    primary: 'bg-brand-500 hover:bg-brand-600 text-white shadow-md shadow-brand-500/20',
-    secondary: 'border border-gray-300 dark:border-dark-border hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-200',
-    danger: 'bg-red-500 hover:bg-red-600 text-white shadow-md shadow-red-500/20',
-    ghost: 'hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-400'
+    primary: 'bg-brand-500 hover:bg-brand-400 text-zinc-900 rounded-full shadow-md shadow-brand-500/20',
+    secondary: 'rounded-full border border-gray-300 dark:border-dark-border hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-200',
+    danger: 'rounded-full bg-red-500 hover:bg-red-600 text-white shadow-md shadow-red-500/20',
+    ghost: 'rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-400'
   };
 
   const sizes = {

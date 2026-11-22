@@ -90,3 +90,8 @@ def test_disclaimer_and_empty_answers():
     assert report["claims"] == []
     assert report["summary"]["grounding"] is None
     assert gloss.audit_answer("", None)["summary"]["total"] == 0
+
+
+def test_pipeline_refusal_is_not_a_claim():
+    report = gloss.audit_answer("I couldn't find information about that in your uploaded documents.", SOURCES)
+    assert report["summary"]["total"] == 0

@@ -23,8 +23,8 @@ export const LandingPage: React.FC = () => {
         </div>
 
         <h1 className="font-display text-5xl sm:text-6xl md:text-7xl font-extrabold tracking-tight mb-8 max-w-4xl mx-auto leading-[1.1] text-gray-900 dark:text-white">
-          Decentralized Search. <br />
-          <span className="gradient-text">Instant Answers.</span>
+          Ask your documents. <br />
+          Get answers you can <em>verify</em>.
         </h1>
 
         <p className="text-lg md:text-xl text-gray-600 dark:text-dark-muted max-w-2xl mx-auto mb-10 leading-relaxed font-semibold">
@@ -34,7 +34,7 @@ export const LandingPage: React.FC = () => {
         <div className="flex flex-col sm:flex-row items-center justify-center gap-4.5 mb-24 max-w-md mx-auto">
           <button 
             onClick={() => navigate('/dashboard')}
-            className="w-full sm:w-auto flex items-center justify-center gap-2 px-8 py-3.5 rounded-2xl bg-zinc-950 hover:bg-zinc-800 dark:bg-white dark:hover:bg-zinc-100 text-white dark:text-black font-bold border border-zinc-900 dark:border-white hover:scale-[1.01] active:scale-98 transition-all duration-300 shadow-lg shadow-zinc-900/10 dark:shadow-zinc-100/5 text-sm"
+            className="w-full sm:w-auto flex items-center justify-center gap-2 px-8 py-3.5 rounded-2xl bg-zinc-950 hover:bg-zinc-800 dark:bg-brand-500 dark:hover:bg-brand-400 rounded-full text-white dark:text-zinc-900 font-bold border border-zinc-900 dark:border-brand-500 hover:scale-[1.01] active:scale-98 transition-all duration-300 shadow-lg shadow-zinc-900/10 dark:shadow-zinc-100/5 text-sm"
           >
             <span>Launch Console</span>
             <ArrowRight className="w-4 h-4 shrink-0" />
@@ -50,7 +50,7 @@ export const LandingPage: React.FC = () => {
         {/* Feature Grid Summary */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           
-          <Card spotlight hoverEffect className="p-8 text-left border-gray-200/50 dark:border-white/5 bg-white/50 dark:bg-dark-card/50 backdrop-blur-sm shadow-lg hover:shadow-xl rounded-3xl transition-all duration-300">
+          <Card spotlight hoverEffect className="p-8 text-left border-gray-200/50 dark:border-brand-500/5 bg-white/50 dark:bg-dark-card/50 backdrop-blur-sm shadow-lg hover:shadow-xl rounded-3xl transition-all duration-300">
             <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-brand-500/10 to-brand-600/10 text-brand-500 flex items-center justify-center mb-6 shadow-inner">
               <Search className="w-6 h-6" />
             </div>
@@ -60,7 +60,7 @@ export const LandingPage: React.FC = () => {
             </p>
           </Card>
 
-          <Card spotlight hoverEffect className="p-8 text-left border-gray-200/50 dark:border-white/5 bg-white/50 dark:bg-dark-card/50 backdrop-blur-sm shadow-lg hover:shadow-xl rounded-3xl transition-all duration-300">
+          <Card spotlight hoverEffect className="p-8 text-left border-gray-200/50 dark:border-brand-500/5 bg-white/50 dark:bg-dark-card/50 backdrop-blur-sm shadow-lg hover:shadow-xl rounded-3xl transition-all duration-300">
             <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-indigo-500/10 to-indigo-600/10 text-indigo-500 flex items-center justify-center mb-6 shadow-inner">
               <MessageSquare className="w-6 h-6" />
             </div>
@@ -70,7 +70,7 @@ export const LandingPage: React.FC = () => {
             </p>
           </Card>
 
-          <Card spotlight hoverEffect className="p-8 text-left border-gray-200/50 dark:border-white/5 bg-white/50 dark:bg-dark-card/50 backdrop-blur-sm shadow-lg hover:shadow-xl rounded-3xl transition-all duration-300">
+          <Card spotlight hoverEffect className="p-8 text-left border-gray-200/50 dark:border-brand-500/5 bg-white/50 dark:bg-dark-card/50 backdrop-blur-sm shadow-lg hover:shadow-xl rounded-3xl transition-all duration-300">
             <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-purple-500/10 to-purple-600/10 text-purple-500 flex items-center justify-center mb-6 shadow-inner">
               <Zap className="w-6 h-6" />
             </div>

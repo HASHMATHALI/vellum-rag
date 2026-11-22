@@ -1,20 +1,36 @@
 /** @type {import('tailwindcss').Config} */
 
-// "Vellum" identity: calfskin parchment and iron-gall ink.
-// The UI is written almost entirely with zinc/gray utilities, so replacing
-// those two scales re-tones every screen consistently without touching markup.
-const vellum = {
-  50: '#fbf7ee',   // fresh parchment
-  100: '#f4eddc',
-  200: '#e7dcc3',
-  300: '#d3c4a3',
-  400: '#a8987a',
-  500: '#7d6f57',
-  600: '#5c5140',
-  700: '#40382c',
-  800: '#2b2620',
-  900: '#1c1915',  // iron-gall ink
-  950: '#12100d',
+// Dark-only identity built on three colours:
+//   Gray   #2B2D31  surfaces
+//   Silver #D9DADC  text
+//   Yellow #FFC93C  accent (primary actions, highlights, active states)
+// The UI is written almost entirely with zinc/gray utilities, so redefining those
+// scales re-tones every screen consistently without touching markup.
+const graphite = {
+  50: '#F7F7F8',
+  100: '#ECEDEE',
+  200: '#D9DADC',  // silver: primary text
+  300: '#BFC1C4',
+  400: '#9A9DA2',
+  500: '#76797F',
+  600: '#55585E',
+  700: '#3D4045',
+  800: '#2B2D31',  // gray: cards and surfaces
+  900: '#232528',
+  950: '#1B1C1F',
+};
+
+const sun = {
+  50: '#FFF9E6',
+  100: '#FFF1C2',
+  200: '#FFE699',
+  300: '#FFDA6B',
+  400: '#FFD150',
+  500: '#FFC93C',  // yellow: accent
+  600: '#F0B520',
+  700: '#C99512',
+  800: '#9C730E',
+  900: '#6E510A',
 };
 
 export default {
@@ -22,42 +38,30 @@ export default {
     "./index.html",
     "./src/**/*.{js,ts,jsx,tsx}",
   ],
-  darkMode: 'class', // Enable class-based dark mode
+  darkMode: 'class', // the `dark` class is always set on <html>
   theme: {
     extend: {
       colors: {
-        zinc: vellum,
-        gray: vellum,
-        white: '#fffdf8',
-        // rubric red, the colour scribes used for headings and initials
-        rubric: { DEFAULT: '#a3271f', light: '#d9584c' },
-        brand: {
-          50: vellum[50],
-          100: vellum[100],
-          200: vellum[200],
-          300: vellum[300],
-          400: vellum[400],
-          500: vellum[900],
-          600: vellum[950],
-          700: vellum[500],
-          800: vellum[600],
-          900: vellum[700],
-        },
+        zinc: graphite,
+        gray: graphite,
+        white: '#F7F7F8',
+        brand: sun,
+        // warnings (Gloss: unsupported / phantom citations), tuned for a dark background
+        rubric: { DEFAULT: '#E5484D', light: '#FF8A8A' },
         dark: {
-          bg: '#15120f',
-          card: '#1e1a16',
-          border: '#342d25',
-          muted: '#a8987a',
-        }
+          bg: '#1E1F22',
+          card: '#2B2D31',
+          border: '#3A3D42',
+          muted: '#9A9DA2',
+        },
       },
       fontFamily: {
         sans: ['"Albert Sans"', 'system-ui', 'sans-serif'],
-        display: ['"Young Serif"', 'Georgia', 'serif'],
+        display: ['"Albert Sans"', 'system-ui', 'sans-serif'],
         mono: ['"IBM Plex Mono"', 'ui-monospace', 'monospace'],
       },
       borderRadius: {
-        // manuscripts have square corners: keep rounding slight everywhere
-        lg: '4px', xl: '5px', '2xl': '6px', '3xl': '8px',
+        lg: '10px', xl: '14px', '2xl': '20px', '3xl': '28px',
       },
     },
   },

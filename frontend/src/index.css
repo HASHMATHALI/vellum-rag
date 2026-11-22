@@ -4,7 +4,7 @@
 
 @layer base {
   body {
-    @apply font-sans antialiased selection:bg-rubric selection:text-white bg-white dark:bg-dark-bg text-zinc-900 dark:text-zinc-100;
+    @apply font-sans antialiased selection:bg-brand-500 selection:text-zinc-900 bg-dark-bg text-zinc-200;
   }
 }
 
@@ -155,19 +155,23 @@
   @apply text-zinc-950 dark:text-white underline underline-offset-4 font-semibold hover:text-zinc-700 dark:hover:text-zinc-300 transition-colors;
 }
 
-/* Vellum identity: a faint ruled-manuscript texture and rubric-red emphasis. */
-body {
-  background-image: repeating-linear-gradient(to bottom, transparent 0 31px, rgba(125, 111, 87, 0.07) 31px 32px);
-  background-attachment: fixed;
-}
+/* Dark identity: gray #2B2D31 surfaces, silver #D9DADC text, yellow #FFC93C accent. */
+html, body { background-color: #1E1F22; color-scheme: dark; }
 .gradient-text {
   background-image: none !important;
   -webkit-text-fill-color: currentColor;
-  color: #1c1915;
+  color: #F7F7F8;
 }
-.dark .gradient-text { color: #f4eddc; }
-h1 em, h2 em { font-style: normal; color: #a3271f; }
-a:hover { text-decoration-color: #a3271f; }
-
-/* Keep the page itself dark in dark mode (visible on overscroll and short pages). */
-.dark body { background-color: #15120f; }
+/* Emphasis in headings renders as a yellow highlight pill: <h1>The app you <em>won't</em> delete</h1> */
+h1 em, h2 em {
+  font-style: normal;
+  color: #2B2D31;
+  background: #FFC93C;
+  padding: 0 0.28em;
+  border-radius: 0.3em;
+  -webkit-box-decoration-break: clone;
+  box-decoration-break: clone;
+}
+a:hover { text-decoration-color: #FFC93C; }
+.markdown-body a { text-decoration-color: #FFC93C; }
+::-webkit-scrollbar-thumb { background-color: #3D4045; }

@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
-import { useTheme } from '../context/ThemeContext';
 import { 
   MessageSquare, 
   FileText, 
@@ -11,14 +10,11 @@ import {
   LogOut, 
   Menu, 
   X, 
-  Sun, 
-  Moon, 
   Cpu 
 } from 'lucide-react';
 
 export const DashboardLayout: React.FC = () => {
   const { user, logout } = useAuth();
-  const { theme, toggleTheme } = useTheme();
   const [sidebarOpen, setSidebarOpen] = useState<boolean>(true);
   const navigate = useNavigate();
 
@@ -50,11 +46,11 @@ export const DashboardLayout: React.FC = () => {
 
       {/* Sidebar Navigation */}
       <aside 
-        className={`fixed inset-y-0 left-0 z-50 flex flex-col w-64 bg-white dark:bg-dark-card border-r border-gray-200/50 dark:border-white/5 transition-transform duration-300 lg:static lg:translate-x-0 ${
+        className={`fixed inset-y-0 left-0 z-50 flex flex-col w-64 bg-white dark:bg-dark-card border-r border-gray-200/50 dark:border-brand-500/5 transition-transform duration-300 lg:static lg:translate-x-0 ${
           sidebarOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
-        <div className="h-16 flex items-center justify-between px-6 border-b border-gray-200/50 dark:border-white/5">
+        <div className="h-16 flex items-center justify-between px-6 border-b border-gray-200/50 dark:border-brand-500/5">
           <NavLink to="/" className="flex items-center gap-2 font-display text-xl font-black tracking-tight text-gray-900 dark:text-white">
             <span>Vellum <span className="font-normal text-zinc-500 dark:text-zinc-400">Console</span></span>
           </NavLink>
@@ -77,7 +73,7 @@ export const DashboardLayout: React.FC = () => {
                 className={({ isActive }) =>
                   `flex items-center gap-3 px-4 py-3 rounded-xl font-semibold transition-all duration-150 ${
                     isActive 
-                      ? 'bg-zinc-950 text-white dark:bg-white dark:text-zinc-950 shadow-sm' 
+                      ? 'bg-zinc-950 text-white dark:bg-brand-500 dark:text-zinc-900 shadow-sm' 
                       : 'hover:bg-zinc-100 dark:hover:bg-zinc-800/60 text-zinc-600 dark:text-zinc-400 hover:text-zinc-950 dark:hover:text-white'
                   }`
                 }
@@ -90,7 +86,7 @@ export const DashboardLayout: React.FC = () => {
         </nav>
 
         {/* Sidebar User Identity */}
-        <div className="p-4 border-t border-gray-200/50 dark:border-white/5 flex flex-col items-center gap-1.5 shrink-0 bg-zinc-50/50 dark:bg-zinc-900/10">
+        <div className="p-4 border-t border-gray-200/50 dark:border-brand-500/5 flex flex-col items-center gap-1.5 shrink-0 bg-zinc-50/50 dark:bg-zinc-900/10">
           <span className="text-xs font-bold text-zinc-900 dark:text-zinc-100 truncate max-w-[200px]" title={user?.email}>
             {user?.full_name || 'Vellum Admin'}
           </span>
@@ -103,7 +99,7 @@ export const DashboardLayout: React.FC = () => {
       {/* Main Body */}
       <div className="flex-grow flex flex-col min-w-0">
         {/* Top Navbar */}
-        <header className="h-16 border-b border-gray-200/50 dark:border-white/5 bg-white dark:bg-dark-card flex items-center justify-between px-6">
+        <header className="h-16 border-b border-gray-200/50 dark:border-brand-500/5 bg-white dark:bg-dark-card flex items-center justify-between px-6">
           <button 
             onClick={() => setSidebarOpen(true)}
             className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 lg:hidden"
@@ -116,14 +112,6 @@ export const DashboardLayout: React.FC = () => {
           </div>
 
           <div className="flex items-center gap-4">
-            {/* Quick theme selector */}
-            <button
-              onClick={toggleTheme}
-              className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
-              aria-label="Toggle theme"
-            >
-              {theme === 'dark' ? <Sun className="w-5 h-5 text-yellow-400" /> : <Moon className="w-5 h-5" />}
-            </button>
             
             <div className="h-8 w-px bg-gray-200 dark:bg-dark-border" />
             

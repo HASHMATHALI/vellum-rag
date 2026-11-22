@@ -48,19 +48,19 @@ export const Dashboard: React.FC = () => {
     }
   }, []);
 
-  // Poll for document status updates while files are in 'processing' status
+  // Load once on mount. (Depending on `documents` here re-ran the effect after every fetch, because each
+  // response is a new array, which fetched /api/documents in a tight loop until the gateway rate-limited it.)
   useEffect(() => {
     fetchDocuments();
-    
-    const interval = setInterval(() => {
-      const hasProcessing = documents.some(d => d.status === 'processing');
-      if (hasProcessing) {
-        fetchDocuments();
-      }
-    }, 4000);
+  }, [fetchDocuments]);
 
+  // Poll every 4 s only while some document is still being indexed.
+  const hasProcessing = documents.some(d => d.status === 'processing');
+  useEffect(() => {
+    if (!hasProcessing) return;
+    const interval = setInterval(fetchDocuments, 4000);
     return () => clearInterval(interval);
-  }, [documents, fetchDocuments]);
+  }, [hasProcessing, fetchDocuments]);
 
   const handleFileUpload = async (files: FileList) => {
     if (files.length === 0) return;

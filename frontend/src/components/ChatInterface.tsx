@@ -70,14 +70,14 @@ export const ChatInterface: React.FC = () => {
   ];
 
   return (
-    <div className="h-[calc(100vh-8rem)] flex rounded-3xl border border-gray-200/50 dark:border-white/5 overflow-hidden bg-white/80 dark:bg-dark-card/45 backdrop-blur-md shadow-2xl animate-fade-in">
+    <div className="h-[calc(100vh-8rem)] flex rounded-3xl border border-gray-200/50 dark:border-brand-500/5 overflow-hidden bg-white/80 dark:bg-dark-card/45 backdrop-blur-md shadow-2xl animate-fade-in">
       
       {/* Sidebar - Conversation History threads */}
-      <aside className="w-64 border-r border-gray-200/50 dark:border-white/5 bg-gray-50/20 dark:bg-dark-bg/10 flex flex-col shrink-0">
-        <div className="p-4 border-b border-gray-200/50 dark:border-white/5">
+      <aside className="w-64 border-r border-gray-200/50 dark:border-brand-500/5 bg-gray-50/20 dark:bg-dark-bg/10 flex flex-col shrink-0">
+        <div className="p-4 border-b border-gray-200/50 dark:border-brand-500/5">
           <button 
             onClick={startNewChat}
-            className="w-full flex items-center justify-center gap-2 py-2.5 rounded-2xl bg-zinc-950 hover:bg-zinc-800 dark:bg-white dark:hover:bg-zinc-100 text-white dark:text-black font-bold text-xs border border-zinc-950 dark:border-white transition-all duration-300 active:scale-98"
+            className="w-full flex items-center justify-center gap-2 py-2.5 rounded-2xl bg-zinc-950 hover:bg-zinc-800 dark:bg-brand-500 dark:hover:bg-brand-400 rounded-full text-white dark:text-zinc-900 font-bold text-xs border border-zinc-950 dark:border-brand-500 transition-all duration-300 active:scale-98"
           >
             <Plus className="w-4 h-4" />
             <span>New Session</span>
@@ -98,7 +98,7 @@ export const ChatInterface: React.FC = () => {
                 className={`
                   w-full text-left px-4 py-3 rounded-2xl text-xs font-bold truncate transition-all duration-200 flex items-center gap-3 hover:-translate-x-0.5 active:scale-98 ${
                     activeSessionId === sess.id
-                      ? 'bg-zinc-100 dark:bg-zinc-800/80 text-zinc-950 dark:text-white border-l-4 border-zinc-900 dark:border-white'
+                      ? 'bg-zinc-100 dark:bg-zinc-800/80 text-zinc-950 dark:text-white border-l-4 border-zinc-900 dark:border-brand-500'
                       : 'hover:bg-gray-100 dark:hover:bg-gray-800/40 text-gray-600 dark:text-gray-400 border-l-4 border-transparent'
                   }
                 `}
@@ -115,7 +115,7 @@ export const ChatInterface: React.FC = () => {
       <div className="flex-grow flex flex-col min-w-0 bg-white/40 dark:bg-dark-card/10">
         
         {/* Thread header control settings */}
-        <header className="px-6 py-4 border-b border-gray-200/50 dark:border-white/5 flex items-center justify-between bg-gray-50/30 dark:bg-dark-bg/5">
+        <header className="px-6 py-4 border-b border-gray-200/50 dark:border-brand-500/5 flex items-center justify-between bg-gray-50/30 dark:bg-dark-bg/5">
           <div className="flex items-center gap-3">
             <span className="text-xs font-bold text-gray-500 dark:text-dark-muted uppercase tracking-wider">Retrieval Engine:</span>
             <select
@@ -140,7 +140,7 @@ export const ChatInterface: React.FC = () => {
 
         {/* Configuration settings overlay box */}
         {showConfig && (
-          <div className="px-6 py-4 bg-gray-50 dark:bg-dark-bg/60 border-b border-gray-200/50 dark:border-white/5 text-xs grid grid-cols-2 gap-6 animate-fade-in">
+          <div className="px-6 py-4 bg-gray-50 dark:bg-dark-bg/60 border-b border-gray-200/50 dark:border-brand-500/5 text-xs grid grid-cols-2 gap-6 animate-fade-in">
             <div className="space-y-2">
               <label className="font-bold text-gray-500 dark:text-dark-muted">Retrieval Chunks Count (k)</label>
               <div className="flex items-center gap-4">
@@ -162,7 +162,7 @@ export const ChatInterface: React.FC = () => {
         <div className="flex-grow overflow-y-auto p-6 space-y-6">
           {messages.length === 0 ? (
             <div className="h-full flex items-center justify-center p-4">
-              <Card spotlight hoverEffect className="p-8 max-w-lg w-full text-center border-gray-200/50 dark:border-white/5 bg-white dark:bg-dark-card shadow-2xl rounded-3xl relative overflow-hidden">
+              <Card spotlight hoverEffect className="p-8 max-w-lg w-full text-center border-gray-200/50 dark:border-brand-500/5 bg-white dark:bg-dark-card shadow-2xl rounded-3xl relative overflow-hidden">
                 <div className="absolute top-0 left-0 w-full h-1 bg-zinc-300 dark:bg-zinc-800" />
                 <div className="w-16 h-16 rounded-2xl bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 flex items-center justify-center mx-auto mb-6 shadow-inner animate-float border border-zinc-200/50 dark:border-zinc-700/50">
                   <Zap className="w-8 h-8" />
@@ -211,7 +211,7 @@ export const ChatInterface: React.FC = () => {
                     <button
                       onClick={() => handleCopy(msg.content, msg.id)}
                       className={`
-                        absolute top-2 right-2 p-1.5 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity bg-white dark:bg-dark-card border border-gray-200/50 dark:border-white/5 text-gray-500 hover:text-gray-700 active:scale-95 shadow-sm
+                        absolute top-2 right-2 p-1.5 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity bg-white dark:bg-dark-card border border-gray-200/50 dark:border-brand-500/5 text-gray-500 hover:text-gray-700 active:scale-95 shadow-sm
                       `}
                       title="Copy response"
                     >
@@ -243,7 +243,7 @@ export const ChatInterface: React.FC = () => {
                             key={sIdx} 
                             spotlight
                             hoverEffect
-                            className="p-4 border border-gray-200/50 dark:border-white/5 bg-gray-50/50 dark:bg-dark-bg/25 text-[11px] leading-relaxed flex flex-col justify-between rounded-2xl shadow-sm"
+                            className="p-4 border border-gray-200/50 dark:border-brand-500/5 bg-gray-50/50 dark:bg-dark-bg/25 text-[11px] leading-relaxed flex flex-col justify-between rounded-2xl shadow-sm"
                           >
                             <div>
                               <div className="flex items-center gap-1.5 font-bold text-gray-700 dark:text-gray-200 mb-2 truncate" title={src.filename}>
@@ -256,7 +256,7 @@ export const ChatInterface: React.FC = () => {
                                 "{src.text_content}"
                               </p>
                             </div>
-                            <div className="flex items-center justify-between text-[10px] text-gray-400 dark:text-dark-muted border-t border-gray-200/20 dark:border-white/5 pt-2">
+                            <div className="flex items-center justify-between text-[10px] text-gray-400 dark:text-dark-muted border-t border-gray-200/20 dark:border-brand-500/5 pt-2">
                               <span className="font-bold truncate" title={src.section || undefined}>
                                 {src.section ? src.section : `Page ${src.page_number}`}
                               </span>
@@ -276,7 +276,7 @@ export const ChatInterface: React.FC = () => {
         </div>
 
         {/* Input Form Panel */}
-        <footer className="p-4 border-t border-gray-200/50 dark:border-white/5 bg-gray-50/20 dark:bg-dark-bg/5">
+        <footer className="p-4 border-t border-gray-200/50 dark:border-brand-500/5 bg-gray-50/20 dark:bg-dark-bg/5">
           <form onSubmit={handleSubmit} className="flex gap-3 max-w-4xl mx-auto w-full">
             <input
               type="text"
@@ -289,7 +289,7 @@ export const ChatInterface: React.FC = () => {
             <button 
               type="submit" 
               disabled={!input.trim() || isStreaming}
-              className="px-5 rounded-2xl bg-zinc-950 hover:bg-zinc-800 dark:bg-white dark:hover:bg-zinc-100 text-white dark:text-black border border-zinc-950 dark:border-white transition-all duration-300 flex items-center justify-center active:scale-97 disabled:opacity-40 disabled:pointer-events-none"
+              className="px-5 rounded-2xl bg-zinc-950 hover:bg-zinc-800 dark:bg-brand-500 dark:hover:bg-brand-400 rounded-full text-white dark:text-zinc-900 border border-zinc-950 dark:border-brand-500 transition-all duration-300 flex items-center justify-center active:scale-97 disabled:opacity-40 disabled:pointer-events-none"
             >
               <Send className="w-4 h-4" />
             </button>

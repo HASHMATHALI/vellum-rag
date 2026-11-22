@@ -40,14 +40,14 @@ export const Gloss: React.FC<{ report: GlossReport }> = ({ report }) => {
   const sorted = [...claims].sort((a, b) => ORDER.indexOf(a.status) - ORDER.indexOf(b.status));
 
   return (
-    <section className="w-full border-l-2 border-rubric/70 dark:border-rubric-light/70 pl-3.5 mt-1" aria-label="Citation check">
+    <section className="w-full border-l-2 border-brand-500/70 pl-3.5 mt-1" aria-label="Citation check">
       <button
         type="button"
         onClick={() => setOpen(!open)}
         aria-expanded={open}
         className="w-full text-left flex flex-wrap items-baseline gap-x-3 gap-y-1 text-[11px] text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100"
       >
-        <span className="font-display text-sm text-rubric dark:text-rubric-light">Gloss</span>
+        <span className="font-display text-sm font-bold text-brand-500">Gloss</span>
         <span>
           <b className="font-mono text-zinc-900 dark:text-zinc-100">{grounded}</b> of{' '}
           <b className="font-mono text-zinc-900 dark:text-zinc-100">{summary.total}</b> claims found in your documents

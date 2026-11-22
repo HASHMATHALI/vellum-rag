@@ -40,7 +40,8 @@ STOPWORDS = frozenset(
     documents states stated mentions mentioned provided context source sources page""".split()
 )
 
-DISCLAIMER_MARKERS = ("general knowledge", "do not contain", "does not contain", "no context available")
+DISCLAIMER_MARKERS = ("general knowledge", "do not contain", "does not contain", "no context available",
+                      "couldn't find information", "could not find information")
 
 
 def _stem(word: str) -> str:
