@@ -13,6 +13,7 @@ from app.models.document import Document
 from app.models.user import User
 from app.observability import tracing
 from app.rag.pipeline import normalize_citations, pipeline, strip_invalid_citations, validate_question
+from app.retrieval.gloss import audit_answer
 
 logger = logging.getLogger(__name__)
 
@@ -108,6 +109,12 @@ class ChatService:
                 cited = set(meta.get("validation", {}).get("cited_refs", []))
                 for s in sources:
                     s["cited"] = s["ref"] in cited
+                if answer.strip() and sources:
+                    # Gloss: deterministic lexical check of each claim against the passages it cites.
+                    try:
+                        yield sse({"gloss": audit_answer(answer, sources)}, "gloss")
+                    except Exception as e:  # the check must never break a delivered answer
+                        logger.warning("Gloss check failed: %s", type(e).__name__)
                 if meta:
                     yield sse({k_: v for k_, v in meta.items() if k_ != "search_query"}, "meta")
                 tracing.set_attrs(root, {tracing.OUTPUT: answer}, content=True)

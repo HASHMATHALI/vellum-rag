@@ -13,12 +13,29 @@ export interface Source {
   text_content: string;
 }
 
+export type GlossStatus = 'supported' | 'partial' | 'unsupported' | 'phantom' | 'traceable' | 'uncited';
+
+export interface GlossClaim {
+  text: string;
+  status: GlossStatus;
+  support: number;
+  citations: { ref?: number; filename: string | null; page: number | null; found: boolean }[];
+  notes: string[];
+}
+
+export interface GlossReport {
+  claims: GlossClaim[];
+  summary: { total: number; grounding: number | null; retrieved_passages: number } & Record<GlossStatus, number>;
+  method: string;
+}
+
 export interface Message {
   id: string;
   role: 'user' | 'assistant';
   content: string;
   sources: Source[];
   created_at: string;
+  gloss?: GlossReport | null;
 }
 
 export interface ChatSession {
@@ -189,6 +206,16 @@ export const useChat = () => {
                   )
                 );
               } 
+              // Handle the citation check that follows the finished answer
+              else if (dataObj.gloss) {
+                setMessages(prev =>
+                  prev.map(m =>
+                    m.id === assistantMsgId
+                      ? { ...m, gloss: dataObj.gloss }
+                      : m
+                  )
+                );
+              }
               // Handle regular text chunk
               else if (dataObj.content !== undefined) {
                 currentReplyContent += dataObj.content;

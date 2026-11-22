@@ -24,6 +24,10 @@ If MFA is enabled, login returns `{"mfa_required": true, "mfa_token": "..."}`. C
 POST /api/auth/login/mfa  {"mfa_token": "...", "code": "123456"}
 ```
 
+## Gloss
+
+After each streamed answer, a `gloss` event carries a deterministic, lexical check of every claim against the passage its `[n]` citation points to (`app/retrieval/gloss.py`). `GET /api/history/{id}` recomputes it for stored answers. It flags unsupported figures and citations to passages that were never retrieved. It cannot judge paraphrase.
+
 ## Errors
 
 - JSON `{"detail": "..."}` with the usual status codes: 400, 401, 403, 404 (also used for resources you don't own), 409 (duplicate upload), 413, 415, 422, 429 (with `Retry-After`) and 503 (health).

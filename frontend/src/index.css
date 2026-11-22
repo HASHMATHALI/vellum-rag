@@ -4,7 +4,7 @@
 
 @layer base {
   body {
-    @apply font-sans antialiased selection:bg-zinc-800 selection:text-white bg-white dark:bg-dark-bg text-zinc-900 dark:text-zinc-100;
+    @apply font-sans antialiased selection:bg-rubric selection:text-white bg-white dark:bg-dark-bg text-zinc-900 dark:text-zinc-100;
   }
 }
 
@@ -154,3 +154,20 @@
 .markdown-body a {
   @apply text-zinc-950 dark:text-white underline underline-offset-4 font-semibold hover:text-zinc-700 dark:hover:text-zinc-300 transition-colors;
 }
+
+/* Vellum identity: a faint ruled-manuscript texture and rubric-red emphasis. */
+body {
+  background-image: repeating-linear-gradient(to bottom, transparent 0 31px, rgba(125, 111, 87, 0.07) 31px 32px);
+  background-attachment: fixed;
+}
+.gradient-text {
+  background-image: none !important;
+  -webkit-text-fill-color: currentColor;
+  color: #1c1915;
+}
+.dark .gradient-text { color: #f4eddc; }
+h1 em, h2 em { font-style: normal; color: #a3271f; }
+a:hover { text-decoration-color: #a3271f; }
+
+/* Keep the page itself dark in dark mode (visible on overscroll and short pages). */
+.dark body { background-color: #15120f; }

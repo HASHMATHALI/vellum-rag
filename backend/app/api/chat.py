@@ -9,6 +9,7 @@ from app.auth.dependencies import get_current_user
 from app.database.connection import get_db
 from app.middleware.rate_limiter import rate_limit_user
 from app.models.user import User
+from app.retrieval.gloss import audit_answer
 from app.services.chat_service import ChatService
 
 router = APIRouter(tags=["AI Chat"])
@@ -38,7 +39,15 @@ async def list_chat_sessions(current_user: User = Depends(get_current_user), db:
 @router.get("/history/{session_id}", response_model=List[MessageResponse])
 async def get_chat_messages(session_id: str, current_user: User = Depends(get_current_user),
                             db: AsyncSession = Depends(get_db)):
-    return await ChatService.get_session_messages(db, session_id, current_user.id)
+    messages = await ChatService.get_session_messages(db, session_id, current_user.id)
+    out = []
+    for m in messages:
+        item = MessageResponse.model_validate(m)
+        if m.role == "assistant":
+            # Gloss is deterministic, so it is recomputed on read rather than stored.
+            item.gloss = audit_answer(m.content, m.sources or [])
+        out.append(item)
+    return out
 
 
 @router.delete("/history/{session_id}", status_code=status.HTTP_200_OK)

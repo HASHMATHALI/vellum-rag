@@ -259,3 +259,15 @@ async def test_cors_only_allows_configured_origins(client):
 async def test_validation_errors_do_not_echo_secrets(client):
     r = await client.post("/api/auth/login", json={"email": "not-an-email", "password": "MySecretPassw0rd"})
     assert r.status_code == 422 and "MySecretPassw0rd" not in r.text
+
+
+async def test_gloss_event_checks_numbered_citations(client, unique):
+    s = await _user(client, unique, "gloss")
+    await _upload(client, s, "falcon.txt", ALICE_DOC)
+    r, events = await _query(client, s, "What is the Falcon project budget for 2027?")
+    gloss = next(d for e, d in events if e == "gloss")["gloss"]
+    cited = [c for claim in gloss["claims"] for c in claim["citations"]]
+    assert cited and cited[0]["ref"] == 1 and cited[0]["found"] is True and cited[0]["filename"] == "falcon.txt"
+    sid = events[0][1]["session_id"]
+    hist = (await client.get(f"/api/history/{sid}", headers=bearer(s))).json()
+    assert hist[1]["gloss"]["method"] == "lexical-overlap-v1"  # recomputed on read

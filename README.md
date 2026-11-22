@@ -133,6 +133,7 @@ Cookie-authenticated `POST`/`PUT`/`DELETE` requests must send `X-CSRF-Token`. AP
 | `session` | `{session_id}` |
 | `sources` | `[{ref, document_id, filename, page_number, section, similarity_score, text_content}]` |
 | *(data)* | `{content}` tokens |
+| `gloss` | per-claim citation check (supported / partial / phantom / uncited) |
 | `meta` | timings, token usage, citation validation |
 | `error` | `{detail}` if the LLM fails mid-stream |
 | `close` | `"[DONE]"` |
@@ -168,7 +169,7 @@ Results, the dataset and their limitations are in [RAG_EVALUATION_REPORT.md](RAG
 .venv\Scripts\python.exe -m pytest
 ```
 
-That runs 88 offline tests (unit, API, security, RLS, reliability) against an isolated local DB with a fake LLM. Live tests against Groq (grounding, refusal, prompt injection, DeepEval assertion):
+That runs 98 offline tests (unit, API, security, RLS, reliability) against an isolated local DB with a fake LLM. Live tests against Groq (grounding, refusal, prompt injection, DeepEval assertion):
 
 ```powershell
 .venv\Scripts\python.exe -m pytest -m live tests\live

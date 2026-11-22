@@ -131,12 +131,12 @@
   {
    "check": "IDOR: other user's document hidden",
    "pass": true,
-   "evidence": 3
+   "evidence": 5
   },
   {
    "check": "IDOR: other user's document not deletable",
    "pass": true,
-   "evidence": 3
+   "evidence": 5
   }
  ]
 }

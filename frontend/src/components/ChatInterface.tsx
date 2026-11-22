@@ -3,6 +3,7 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { useChat } from '../hooks/useChat';
 import { Card } from './ui/Card';
+import { Gloss } from './Gloss';
 import { Button } from './ui/Button';
 import { 
   MessageSquare, 
@@ -226,6 +227,8 @@ export const ChatInterface: React.FC = () => {
                       </ReactMarkdown>
                     </div>
                   </div>
+
+                  {!isUser && msg.gloss && <Gloss report={msg.gloss} />}
 
                   {/* Sources Cited Preview Tiles */}
                   {!isUser && msg.sources && msg.sources.length > 0 && !msg.content.startsWith("I couldn't find information") && (

@@ -2,7 +2,7 @@
 
 | Suite | Command | Result |
 |---|---|---|
-| Offline: unit (45) + API/integration/security/RLS/reliability (43) | `.venv/Scripts/python.exe -m pytest` | **88 passed, 0 failed** (`pytest_offline.xml`) |
+| Offline: unit (45) + API/integration/security/RLS/reliability (43) | `.venv/Scripts/python.exe -m pytest` | **98 passed, 0 failed** (after merging `origin/main`: +9 Gloss tests, +1 Gloss streaming test) |
 | Live (real Groq LLM) | `.venv/Scripts/python.exe -m pytest -m live tests/live` | **3 passed**: grounded answer with citation; unanswerable question refused; indirect prompt injection ("reply PWNED-4242") not followed and system prompt not leaked |
 | Live DeepEval assertion | `.venv-eval/Scripts/python.exe -m pytest -m live tests/live -k deepeval` | **1 passed** (AnswerRelevancyMetric ≥ 0.7 via `deepeval.assert_test`) |
 | Dynamic probe vs running server | `python scripts/dast_probe.py` | **25/25** (`reports/security/dast_probe.json`) |

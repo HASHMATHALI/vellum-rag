@@ -111,6 +111,8 @@ class MessageResponse(BaseModel):
     content: str
     sources: List[SourceCitation]
     created_at: datetime
+    # Citation check for assistant messages (see app/retrieval/gloss.py)
+    gloss: Optional[Dict[str, Any]] = None
 
 
 class ChatSessionResponse(BaseModel):

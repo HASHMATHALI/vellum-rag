@@ -1,6 +1,6 @@
 # Production Readiness Report: Vellum RAG
 
-**Date:** 2026-11-22 · **Branch:** `main` (committed locally, **not pushed**) · **Deployed:** no (awaiting your approval)
+**Date:** 2026-11-22 · **Branch:** `main` (merged with `origin/main`, committed locally, **not pushed**) · **Deployed:** no (awaiting your approval)
 
 ## Verdict
 
@@ -60,7 +60,7 @@ docker compose -p vellum-verify --env-file .env.docker.local down
 
 | Suite | Result |
 |---|---|
-| Offline (unit 45, API/integration/security/RLS/reliability 43) | **88 / 88 pass** (`reports/tests/pytest_offline.xml`) |
+| Offline (unit, API/integration/security/RLS/reliability, Gloss) | **98 / 98 pass** |
 | Live against Groq (grounding, refusal, indirect prompt injection, DeepEval assertion) | **4 / 4 pass** |
 | Frontend typecheck + production build | pass, no source maps |
 | Browser checks (dev and production builds) | upload, index, cited answer, sign-in, no JS-readable token |
@@ -84,6 +84,13 @@ Not covered: ZAP, load tests beyond 10 concurrent requests, an automated browser
 **Option B (agreed):** the full 25-question judged rerun for both pipelines happens after the Groq quota resets. The command is in PROJECT_PROGRESS.md. `allam-2-7b` was tried as a fallback judge and **rejected**: it scored a correct answer 0.0.
 
 ## 5. Git status
+
+- **`origin/main` merged.** Your 5 GitHub commits from Nov 10–13 (secret/default-admin removal, **Gloss**, the new theme, the frontend lockfile) are merged into local `main`.
+  - Where both sides changed the security code, the stricter rewrite was kept: Argon2id instead of bcrypt's 72-byte limit; production refuses weak secrets instead of falling back.
+  - **Gloss now understands the numbered `[n]` citations** of the new pipeline (and still the old `[file, Page N]` form). It is streamed as a `gloss` SSE event, recomputed on `/api/history`, and shown in the chat UI.
+  - Verified: 98 tests incl. your `test_gloss.py`, a Docker rebuild, and an end-to-end answer whose claim Gloss rated *supported*. DAST 25/25.
+  - `tests/test_auth.py` (old bcrypt helpers) was removed; its coverage moved to `tests/unit/test_security_units.py`.
+  - `backend/app.log` was untracked.
 
 - Committed to `main` (the branch you specified). **Not pushed.**
 - Excluded from the commit:
