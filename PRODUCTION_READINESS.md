@@ -34,6 +34,7 @@ The application is now ready for production use: it is secure, tested and verifi
 3. **Supabase → Storage → `documents` → Private.** Do this **together with** the new deploy. The old live code needs public URLs, so doing it earlier breaks uploads on the live site.
 4. **Rotate the Supabase `service_role` key** if `.env` was ever shared. It has not been in git. Then update Render and your local `.env`.
 5. Treat documents previously uploaded through guest mode or the public bucket as exposed.
+6. Your local `.env` still sets `POSTGRES_PASSWORD` to the old public default (`docker-compose` only; your Supabase `DATABASE_URL` is separate). Change it if you use the old local Compose volumes, and change the Supabase DB password if it ever matched.
 
 **Done locally.** Your `.env` JWT secret, which was the public default, was replaced with a new random value. It was never printed.
 
