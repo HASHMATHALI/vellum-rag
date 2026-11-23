@@ -1,0 +1,22 @@
+# Never upload secrets or local environments
+.env
+.env.*
+!.env.example
+.venv/
+.venv-eval/
+.claude/
+**/__pycache__/
+**/node_modules/
+frontend/dist/
+backend/uploads/
+backend/.test_uploads/
+backend/app.log*
+uploads/
+# Not needed to run the app
+evaluation/
+reports/
+tests/
+scripts/
+docs/
+nginx/
+*.pdf

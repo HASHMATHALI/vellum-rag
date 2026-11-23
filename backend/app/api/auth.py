@@ -67,7 +67,8 @@ async def login(payload: UserLogin, request: Request, response: Response, db: As
 async def auth_config():
     """Public sign-in options for the frontend (the Google client ID is public by design)."""
     ids = google.client_ids()
-    return {"google_client_id": ids[0] if ids else None, "guest_enabled": settings.ALLOW_GUEST}
+    return {"google_client_id": ids[0] if ids else None, "guest_enabled": settings.ALLOW_GUEST,
+            "max_upload_mb": settings.MAX_UPLOAD_SIZE_MB}
 
 
 @router.post("/google", response_model=Union[SessionResponse, MfaRequiredResponse],

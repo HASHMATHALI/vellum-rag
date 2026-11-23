@@ -20,3 +20,7 @@ evaluation/reports/phoenix/
 evaluation/reports/evidently_workspace/
 evaluation/reports/runs/*/trulens/trulens.sqlite
 evaluation/reports/runs/smoke/
+
+.vercel
+.env*
+!.env.example

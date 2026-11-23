@@ -38,6 +38,11 @@ export const Dashboard: React.FC = () => {
   const [uploading, setUploading] = useState(false);
   const [dragOver, setDragOver] = useState(false);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
+  const [maxUploadMb, setMaxUploadMb] = useState<number>(20);
+
+  useEffect(() => {
+    api.get('/api/auth/config').then((r) => { if (r.data.max_upload_mb) setMaxUploadMb(r.data.max_upload_mb); }).catch(() => {});
+  }, []);
 
   const fetchDocuments = useCallback(async () => {
     try {
@@ -248,7 +253,7 @@ export const Dashboard: React.FC = () => {
                       <span className="text-xs text-gray-400 dark:text-dark-muted block mt-1">or browse files from system</span>
                     </div>
                     <span className="inline-block text-[10px] font-semibold bg-gray-100 dark:bg-dark-bg/80 text-gray-500 dark:text-dark-muted px-2.5 py-1 rounded-md">
-                      PDF, DOCX, TXT, MD up to 20MB
+                      PDF, DOCX, TXT, MD, CSV up to {maxUploadMb} MB
                     </span>
                   </div>
                 )}

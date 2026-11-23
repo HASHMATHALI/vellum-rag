@@ -77,6 +77,9 @@ class Settings(BaseSettings):
     SUPABASE_KEY: str = ""
     SUPABASE_STORAGE_BUCKET: str = "documents"
     MAX_UPLOAD_SIZE_MB: int = 20
+    # Index inside the upload request instead of a background task. Required on serverless/container hosts
+    # (e.g. Vercel) where work after the response is not guaranteed to run.
+    INLINE_INDEXING: bool = False
     MAX_PDF_PAGES: int = 500
     MAX_EXTRACTED_CHARS: int = 5_000_000
 

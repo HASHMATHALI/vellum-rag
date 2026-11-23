@@ -293,3 +293,11 @@ async def test_overview_with_no_documents_still_refuses(client, unique, fake_llm
     fake_llm.calls.clear()
     r, events = await _query(client, s, "Summarize my documents")
     assert "".join(d["content"] for e, d in events if e == "message") == NO_ANSWER and fake_llm.calls == []
+
+
+async def test_inline_indexing_returns_an_indexed_document(client, unique, monkeypatch):
+    from app.config.settings import settings
+    monkeypatch.setattr(settings, "INLINE_INDEXING", True)
+    s = await _user(client, unique, "inline")
+    r = await client.post("/api/upload", headers=bearer(s), files={"file": ("inline.txt", b"Inline indexing keeps serverless hosts reliable.", "text/plain")})
+    assert r.status_code == 201 and r.json()["status"] == "indexed" and r.json()["total_chunks"] >= 1

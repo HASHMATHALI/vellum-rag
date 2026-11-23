@@ -67,7 +67,11 @@ class DocumentService:
         db.add(doc)
         await db.commit()
         await db.refresh(doc)
-        background_tasks.add_task(cls.process_and_index_document, doc.id)
+        if settings.INLINE_INDEXING:
+            await cls.process_and_index_document(doc.id)
+            await db.refresh(doc)
+        else:
+            background_tasks.add_task(cls.process_and_index_document, doc.id)
         return doc
 
     @staticmethod

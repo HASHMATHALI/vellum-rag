@@ -1,6 +1,6 @@
 # Production Readiness Report: Vellum RAG
 
-**Date:** 2026-11-22 · **Branch:** `main` (merged with `origin/main`, committed locally, **not pushed**) · **Deployed:** no (awaiting your approval)
+**Date:** 2026-11-22 · **Branch:** `main` (merged with `origin/main`, committed locally, **not pushed**) · **Deployed:** ✅ https://vellum-rag.vercel.app (Vercel, verified end-to-end, see DEPLOYMENT_REPORT §7)
 
 ## Verdict
 
@@ -121,3 +121,16 @@ Not covered: ZAP, load tests beyond 10 concurrent requests, an automated browser
 5. Make the bucket private.
 6. Run the post-deploy checks (DEPLOYMENT_REPORT §4).
 7. Run the full evaluation once the quota resets.
+
+## 7. Live status (2026-11-23)
+
+- **Live:** https://vellum-rag.vercel.app (Vercel Services, backend in Tokyo, Supabase DB and private storage). Verified end to end.
+- **Done since the readiness review:**
+  - Supabase bucket made **private**.
+  - A new JWT secret is in use on Vercel.
+  - Sign in with Google implemented (needs your Client ID).
+- **Still needs you:**
+  1. **Google Client ID:** create an OAuth "Web application" client with authorised JavaScript origin `https://vellum-rag.vercel.app`, then send me the ID (it is public). I'll set `GOOGLE_CLIENT_ID` and redeploy.
+  2. **Suspend or delete the old Render service**, which still runs the old, vulnerable code.
+  3. Optional: rotate the Supabase `service_role` key (Supabase → Settings → API), then update the Vercel env var.
+  4. Optional: add Upstash Redis for rate limits shared across instances.

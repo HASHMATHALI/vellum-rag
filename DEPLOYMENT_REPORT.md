@@ -131,3 +131,35 @@ Put TLS in front (Caddy, Traefik, a cloud LB), then set `COOKIE_SECURE=true` and
 3. CPU-bound reranking caps throughput at about 0.8–1 req/s per 4-core worker (PERFORMANCE_REPORT.md).
 4. RLS (`rls.sql`) is ready but not applied to Supabase.
 5. Backups: Supabase PITR or daily `pg_dump`. Uploads live in the private bucket or the `uploads_data` volume.
+
+## 7. Live deployment: Vercel (2026-11-23)
+
+**URL: https://vellum-rag.vercel.app**. Vercel project `vellum-rag` (Hobby plan), one deployment using **Vercel Services** (beta): the Vite frontend as a static site, and the FastAPI backend as a **container** built from `backend/Dockerfile`, pinned to Tokyo (`hnd1`) next to the database. The configuration is in `vercel.json` (routing `/api/*` → backend, everything else → SPA, security headers) and `.vercelignore` (no `.env`, venvs or evaluation data are uploaded).
+
+| Component | Where |
+|---|---|
+| Database | Supabase Postgres (Tokyo) via the IPv4 **session pooler**, pgvector 0.8.2. The project had no app tables, so the migrations created them |
+| File storage | Supabase bucket `documents`, **now private**: anonymous public-URL reads return 400; the app uses the server key |
+| LLM | Groq (`GROQ_API_KEY` set as a Vercel env var) |
+| Secrets | Set with `vercel env add` from stdin, never printed. **New** `JWT_SECRET_KEY` generated for this deployment |
+
+Serverless adaptations:
+- `INLINE_INDEXING=true` indexes inside the upload request, because work after the response isn't guaranteed.
+- `MAX_UPLOAD_SIZE_MB=4`, since Vercel request bodies are limited to 4.5 MB.
+- `WEB_CONCURRENCY=1` and a small DB pool (3+2) per instance.
+- `PORT=8000`.
+
+**Verified against the live URL:** health 200 (database and vector store healthy); guest session with HttpOnly + Secure cookies; TXT upload indexed in 1.4 s; a 14-page PDF indexed into 34 chunks *after* the bucket was made private; cited answer "8 km/h [1]" (Gloss grounding 1.0) in 1.1 s; off-topic question refused; whole-document question summarised; CSP / HSTS / X-Frame-Options present; dark UI renders.
+
+**Known limits on this plan:**
+- Containers scale to zero after 5 idle minutes, so the first request after idle includes a cold start.
+- Rate limits are per instance (add Upstash Redis via the Vercel Marketplace and set `REDIS_URL` for shared limits).
+- The guest-retention loop only runs while an instance is up.
+
+Redeploy with:
+```powershell
+vercel deploy --prod
+```
+Alternatively, connect Git with `vercel git connect` to deploy on every push.
+
+**Old Render deployment:** still online running the **old, vulnerable code** against an unknown database. Suspend or delete it in the Render dashboard.
