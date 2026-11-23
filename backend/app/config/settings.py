@@ -41,6 +41,9 @@ class Settings(BaseSettings):
     GUEST_TTL_HOURS: int = 24
     GUEST_MAX_DOCUMENTS: int = 5
 
+    # Sign in with Google: OAuth 2.0 *Web* client ID(s), comma-separated. Empty = Google sign-in disabled.
+    GOOGLE_CLIENT_ID: str = ""
+
     # Optional bootstrap admin (only created when both are set and the password is strong).
     ADMIN_EMAIL: str = ""
     ADMIN_PASSWORD: str = ""

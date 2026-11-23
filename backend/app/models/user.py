@@ -27,6 +27,8 @@ class User(Base):
     mfa_secret: Mapped[str] = mapped_column(String(64), nullable=True)
     mfa_recovery_codes: Mapped[str] = mapped_column(Text, nullable=True)  # JSON list of argon2 hashes
     last_login_at: Mapped[datetime.datetime] = mapped_column(DateTime, nullable=True)
+    # Google account id (`sub` claim) when the user signs in with Google
+    google_sub: Mapped[str] = mapped_column(String(64), unique=True, index=True, nullable=True)
 
     documents = relationship("Document", back_populates="user", cascade="all, delete-orphan", passive_deletes=True)
     chat_sessions = relationship("ChatSession", back_populates="user", cascade="all, delete-orphan", passive_deletes=True)

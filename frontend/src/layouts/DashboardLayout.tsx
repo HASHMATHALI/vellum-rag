@@ -121,6 +121,14 @@ export const DashboardLayout: React.FC = () => {
                 Connected
               </span>
             </div>
+            {user?.role === 'guest' && (
+              <button
+                onClick={() => navigate('/login')}
+                className="px-4 py-2 rounded-full bg-brand-500 hover:bg-brand-400 text-zinc-900 text-xs font-bold transition-colors"
+              >
+                Sign in
+              </button>
+            )}
           </div>
         </header>
 

@@ -3,9 +3,9 @@ from typing import Union
 from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.schemas import (AccountDelete, MfaCode, MfaDisable, MfaLogin, MfaRequiredResponse, MfaSetupResponse,
+from app.api.schemas import (AccountDelete, GoogleLogin, MfaCode, MfaDisable, MfaLogin, MfaRequiredResponse, MfaSetupResponse,
                              PasswordChange, SessionResponse, UserInfo, UserLogin, UserProfileUpdate, UserRegister)
-from app.auth import mfa
+from app.auth import google, mfa
 from app.auth.dependencies import (ACCESS_COOKIE, REFRESH_COOKIE, get_current_user, get_registered_user)
 from app.auth.jwt import create_mfa_token, csrf_token_for, decode_token, get_password_hash, verify_password
 from app.config.settings import settings
@@ -59,6 +59,24 @@ async def login(payload: UserLogin, request: Request, response: Response, db: As
     user = await AuthService.authenticate(db, payload.email, payload.password)
     if user.mfa_enabled:
         await db.commit()
+        return MfaRequiredResponse(mfa_token=create_mfa_token(user.id))
+    return await _start_session(db, user, request, response)
+
+
+@router.get("/config")
+async def auth_config():
+    """Public sign-in options for the frontend (the Google client ID is public by design)."""
+    ids = google.client_ids()
+    return {"google_client_id": ids[0] if ids else None, "guest_enabled": settings.ALLOW_GUEST}
+
+
+@router.post("/google", response_model=Union[SessionResponse, MfaRequiredResponse],
+             dependencies=[Depends(rate_limit_ip("google", 20, 60))])
+async def login_google(payload: GoogleLogin, request: Request, response: Response, db: AsyncSession = Depends(get_db)):
+    """Sign in with Google: verifies the Google ID token, then links or creates the account."""
+    claims = await google.verify_google_token(payload.credential)
+    user = await google.user_for_google(db, claims)
+    if user.mfa_enabled:  # a Google login does not bypass the account's second factor
         return MfaRequiredResponse(mfa_token=create_mfa_token(user.id))
     return await _start_session(db, user, request, response)
 

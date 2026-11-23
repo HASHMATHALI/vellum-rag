@@ -18,6 +18,8 @@ UPGRADE_STATEMENTS = [
     "ALTER TABLE users ADD COLUMN IF NOT EXISTS mfa_secret varchar(64)",
     "ALTER TABLE users ADD COLUMN IF NOT EXISTS mfa_recovery_codes text",
     "ALTER TABLE users ADD COLUMN IF NOT EXISTS last_login_at timestamp",
+    "ALTER TABLE users ADD COLUMN IF NOT EXISTS google_sub varchar(64)",
+    "CREATE UNIQUE INDEX IF NOT EXISTS ix_users_google_sub ON users (google_sub)",
     # documents: dedupe + error reporting
     "ALTER TABLE documents ADD COLUMN IF NOT EXISTS content_hash varchar(64)",
     "ALTER TABLE documents ADD COLUMN IF NOT EXISTS error_message varchar(500)",

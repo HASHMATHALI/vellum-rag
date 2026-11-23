@@ -17,6 +17,7 @@ interface AuthContextType {
   error: string | null;
   login: (email: string, password: string) => Promise<LoginResult>;
   loginMfa: (mfaToken: string, code: string) => Promise<void>;
+  loginWithGoogle: (credential: string) => Promise<LoginResult>;
   register: (email: string, password: string, fullName: string) => Promise<LoginResult>;
   logout: () => Promise<void>;
   updateUser: (patch: Partial<User>) => void;
@@ -85,6 +86,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  const loginWithGoogle = async (credential: string): Promise<LoginResult> => {
+    try {
+      const r = await api.post('/api/auth/google', { credential });
+      if (r.data.mfa_required) return { mfaRequired: true, mfaToken: r.data.mfa_token };
+      applySession(r.data);
+      return { mfaRequired: false };
+    } catch (e) {
+      throw new Error(errorMessage(e, 'Google sign-in failed'));
+    }
+  };
+
   const loginMfa = async (mfaToken: string, code: string) => {
     try {
       const r = await api.post('/api/auth/login/mfa', { mfa_token: mfaToken, code });
@@ -115,7 +127,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const updateUser = (patch: Partial<User>) => setUser((u) => (u ? { ...u, ...patch } : u));
 
   return (
-    <AuthContext.Provider value={{ user, loading, error, login, loginMfa, register, logout, updateUser }}>
+    <AuthContext.Provider value={{ user, loading, error, login, loginMfa, loginWithGoogle, register, logout, updateUser }}>
       {children}
     </AuthContext.Provider>
   );

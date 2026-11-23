@@ -16,6 +16,10 @@ class UserLogin(BaseModel):
     password: str = Field(..., min_length=1, max_length=256)
 
 
+class GoogleLogin(BaseModel):
+    credential: str = Field(..., min_length=20, max_length=4096)  # Google Identity Services ID token
+
+
 class MfaLogin(BaseModel):
     mfa_token: str = Field(..., max_length=2048)
     code: str = Field(..., min_length=6, max_length=32)

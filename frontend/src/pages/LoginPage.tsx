@@ -4,10 +4,10 @@ import { useAuth } from '../hooks/useAuth';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { Card } from '../components/ui/Card';
-import { Mail, Lock } from 'lucide-react';
+import { GoogleSignInButton } from '../components/GoogleSignInButton';
 
 export const LoginPage: React.FC = () => {
-  const { login, loginMfa } = useAuth();
+  const { login, loginMfa, loginWithGoogle } = useAuth();
   const navigate = useNavigate();
 
   const [email, setEmail] = useState('');
@@ -16,6 +16,23 @@ export const LoginPage: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [mfaToken, setMfaToken] = useState<string | null>(null);
   const [code, setCode] = useState('');
+
+  const handleGoogle = async (credential: string) => {
+    setError(null);
+    setLoading(true);
+    try {
+      const result = await loginWithGoogle(credential);
+      if (result.mfaRequired) {
+        setMfaToken(result.mfaToken);
+        return;
+      }
+      navigate('/dashboard');
+    } catch (err: any) {
+      setError(err.message || 'Google sign-in failed.');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -108,6 +125,11 @@ export const LoginPage: React.FC = () => {
               {mfaToken ? 'Verify' : 'Sign In'}
             </Button>
           </form>
+          {!mfaToken && (
+            <div className="mt-5">
+              <GoogleSignInButton onCredential={handleGoogle} onError={setError} />
+            </div>
+          )}
         </Card>
       </div>
     </div>
